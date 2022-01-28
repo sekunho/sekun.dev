@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-01-28 Fri 15:42 -->
+<!-- 2022-01-28 Fri 18:05 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Creating Interactive Applications with No JS</title>
@@ -201,28 +201,34 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents" role="doc-toc">
 <ul>
-<li><a href="#org38f133e">1. The Project</a></li>
-<li><a href="#org4043df9">2. The Plan</a>
+<li><a href="#orge75dda6">1. The Project</a></li>
+<li><a href="#org3bcdc0f">2. The Plan</a>
 <ul>
-<li><a href="#orgfd6c3b3">2.1. Shiny New Stack</a></li>
-<li><a href="#org03afd0e">2.2. Where should I deploy this?</a></li>
+<li><a href="#org9de52b3">2.1. Shiny New Stack</a></li>
+<li><a href="#orgc27b049">2.2. Where should I deploy this?</a></li>
 </ul>
 </li>
-<li><a href="#org8bdc9d0">3. Part 1 - Setup</a>
+<li><a href="#org6354b7e">3. Part 1 - Setup</a>
 <ul>
-<li><a href="#org9ad8507">3.1. Generating a Phoenix project</a></li>
-<li><a href="#org46a80b8">3.2. TailwindCSS Integration</a>
+<li><a href="#orgf628a2a">3.1. Generating a Phoenix project</a></li>
+<li><a href="#orga796228">3.2. TailwindCSS Integration</a>
 <ul>
-<li><a href="#orgafdfbfa">3.2.1. Installing <code>tailwind</code> dependency</a></li>
-<li><a href="#orge1240ca">3.2.2. Configuring the <code>tailwind</code> dependency</a></li>
-<li><a href="#org6b43fec">3.2.3. Setup hot reload</a></li>
+<li><a href="#org8d9ba43">3.2.1. Installing <code>tailwind</code> dependency</a></li>
+<li><a href="#org455a0cd">3.2.2. Configuring the <code>tailwind</code> dependency</a></li>
+<li><a href="#orgefd82e2">3.2.3. Setup hot reload</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a href="#orgfef4028">4. Part 2 - The Landing Page</a>
+<li><a href="#org0fdd5f7">4. Part 2 - The Landing Page</a>
 <ul>
-<li><a href="#orgac820a1">4.1. Routers, controllers, views, and templates</a></li>
+<li><a href="#org759e1b6">4.1. Routers and controllers</a></li>
+<li><a href="#org8b5c338">4.2. A new template: <code>.heex</code></a>
+<ul>
+<li><a href="#orgd1c9113">4.2.1. Better syntax</a></li>
+<li><a href="#org2b20759">4.2.2. Component slots</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -236,13 +242,6 @@ writing my first ever dev blog post about web dev, because I need something to
 show in case I start looking for a web dev position. Hello (maybe) future employer,
 I know how to code, I swear.
 </p>
-
-<blockquote>
-<p>
-Well, I also did spend the past 43 days without internet and electricity so
-lately I&rsquo;ve been completely wasting my time doing nothing. It doesn&rsquo;t feel good.
-</p>
-</blockquote>
 
 <p>
 Developing web applications (or simple websites) without ever touching JS has
@@ -258,7 +257,7 @@ for this to just be a blog about why I hate JS. It is, after all, a blog about
 So, title, no, I don&rsquo;t mean for No JS to be
 <i>yet another fundamentally different JS framework</i>. Rather I don&rsquo;t want to deal
 with JS when building applications. Sometimes I won&rsquo;t have a choice, but a lot
-of the times I actually <i>can</i> avoid it.
+of the times I actually <i>can</i> avoid most of it.
 </p>
 
 <p>
@@ -268,11 +267,24 @@ not completely getting rid of it. There are actual plain HTML + CSS pages with 0
 JS, but the lack of interactivity is not too fun.
 </p>
 
-<div id="outline-container-org38f133e" class="outline-2">
-<h2 id="org38f133e"><span class="section-number-2">1.</span> The Project</h2>
+<blockquote>
+<p>
+<b>NOTE</b>: This is not meant to be a tutorial. Copying all the code snippets here,
+especially the template files, won&rsquo;t give you the same result as the screenshots
+without more legwork. This is intentional because this project is not meant to
+be open sourced!
+</p>
+
+<p>
+I may make an actual tutorial in the future, but this isn&rsquo;t it.
+</p>
+</blockquote>
+
+<div id="outline-container-orge75dda6" class="outline-2">
+<h2 id="orge75dda6"><span class="section-number-2">1.</span> The Project</h2>
 <div class="outline-text-2" id="text-1">
 <p>
-I&rsquo;m migrating away from a simple project (Svelte + Strapi). I still need to
+I&rsquo;m migrating a simple project away from Svelte. I still need to
 keep Strapi because its admin interface and loads of other CMS features are
 just too useful for me to pass up on. But Svelte has been a thorn on my side
 because I simply don&rsquo;t have the time to explore the million different ways
@@ -280,11 +292,8 @@ on how to perform SSR (server-side rendering). In retrospect, using it was a
 bad idea just solely with that reason. I spent around an hour trying to figure
 out how to do SSR so that I Google can crawl through it without going through
 a queue, but eventually gave up because there were a million caveats that I
-had to consider.
-</p>
-
-<p>
-Quite frankly, I&rsquo;m getting too old to deal with new weekly frameworks.
+had to consider. Quite frankly, I&rsquo;m getting too old to deal with new weekly
+frameworks.
 </p>
 
 <p>
@@ -313,8 +322,8 @@ Okay, how do I create interactive pages without writing JS?
 </div>
 </div>
 
-<div id="outline-container-org4043df9" class="outline-2">
-<h2 id="org4043df9"><span class="section-number-2">2.</span> The Plan</h2>
+<div id="outline-container-org3bcdc0f" class="outline-2">
+<h2 id="org3bcdc0f"><span class="section-number-2">2.</span> The Plan</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 It&rsquo;s time to revisit one of the tools I used around a year ago. What drew me
@@ -328,8 +337,8 @@ already familiar with, a language that is at least strongly typed: Elixir.
 </p>
 </div>
 
-<div id="outline-container-orgfd6c3b3" class="outline-3">
-<h3 id="orgfd6c3b3"><span class="section-number-3">2.1.</span> Shiny New Stack</h3>
+<div id="outline-container-org9de52b3" class="outline-3">
+<h3 id="org9de52b3"><span class="section-number-3">2.1.</span> Shiny New Stack</h3>
 <div class="outline-text-3" id="text-2-1">
 <p>
 Elixir has this interesting project called Phoenix. In itself, it&rsquo;s your
@@ -367,8 +376,8 @@ like to avoid, so I&rsquo;ll have Phoenix communicate with the Strapi server ins
 </div>
 </div>
 
-<div id="outline-container-org03afd0e" class="outline-3">
-<h3 id="org03afd0e"><span class="section-number-3">2.2.</span> Where should I deploy this?</h3>
+<div id="outline-container-orgc27b049" class="outline-3">
+<h3 id="orgc27b049"><span class="section-number-3">2.2.</span> Where should I deploy this?</h3>
 <div class="outline-text-3" id="text-2-2">
 <p>
 Phoenix historically had a bad experience when it comes to deploying due to
@@ -390,12 +399,12 @@ This will be covered in more detail in the [[] [deploy]] section.
 </div>
 </div>
 
-<div id="outline-container-org8bdc9d0" class="outline-2">
-<h2 id="org8bdc9d0"><span class="section-number-2">3.</span> Part 1 - Setup</h2>
+<div id="outline-container-org6354b7e" class="outline-2">
+<h2 id="org6354b7e"><span class="section-number-2">3.</span> Part 1 - Setup</h2>
 <div class="outline-text-2" id="text-3">
 </div>
-<div id="outline-container-org9ad8507" class="outline-3">
-<h3 id="org9ad8507"><span class="section-number-3">3.1.</span> Generating a Phoenix project</h3>
+<div id="outline-container-orgf628a2a" class="outline-3">
+<h3 id="orgf628a2a"><span class="section-number-3">3.1.</span> Generating a Phoenix project</h3>
 <div class="outline-text-3" id="text-3-1">
 <p>
 Lots of ways to setup a project, but my favorite one for at least setting up
@@ -404,7 +413,7 @@ out, but I do know enough to setup a local dev environment with what I need.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-nix" id="orgb79b726">{
+<pre class="src src-nix" id="org82f2c4e">{
   <span style="color: #e95678;">description</span> = <span style="color: #fab795;">"angelazydoodles's portfolio"</span>;
 
   <span style="color: #e95678;">inputs</span> = {
@@ -478,8 +487,8 @@ Run <code>mix phx.server</code>, and it&rsquo;ll be served in <a href="http://lo
 </p>
 
 
-<div id="org48600c4" class="figure">
-<p><img src="./1.png" alt="1.png" />
+<div id="org3620c72" class="figure">
+<p><img src="./1.png" alt="1.png" width="100%" />
 </p>
 <p><span class="figure-number">Figure 1: </span>The default page for every Phoenix application</p>
 </div>
@@ -490,8 +499,8 @@ Beautiful.
 </div>
 </div>
 
-<div id="outline-container-org46a80b8" class="outline-3">
-<h3 id="org46a80b8"><span class="section-number-3">3.2.</span> TailwindCSS Integration</h3>
+<div id="outline-container-orga796228" class="outline-3">
+<h3 id="orga796228"><span class="section-number-3">3.2.</span> TailwindCSS Integration</h3>
 <div class="outline-text-3" id="text-3-2">
 <p>
 This is a controversial CSS library, and I pretty much understand why anyone
@@ -515,8 +524,8 @@ build with your Phoenix project, which I&rsquo;ll be following for this one <sup
 </p>
 </div>
 
-<div id="outline-container-orgafdfbfa" class="outline-4">
-<h4 id="orgafdfbfa"><span class="section-number-4">3.2.1.</span> Installing <code>tailwind</code> dependency</h4>
+<div id="outline-container-org8d9ba43" class="outline-4">
+<h4 id="org8d9ba43"><span class="section-number-4">3.2.1.</span> Installing <code>tailwind</code> dependency</h4>
 <div class="outline-text-4" id="text-3-2-1">
 <p>
 So, there&rsquo;s a library for tailwind integration called <code>tailwind</code>, which you
@@ -524,7 +533,7 @@ install like so (for dev environments only):
 </p>
 
 <div class="org-src-container">
-<pre class="src src-elixir" id="org96f1ace"><span style="color: #b877db;">defmodule</span> <span style="color: #87ceeb;">Angelazydoodles.MixProject</span> <span style="color: #b877db;">do</span>
+<pre class="src src-elixir" id="org3ab9e2a"><span style="color: #b877db;">defmodule</span> <span style="color: #87ceeb;">Angelazydoodles.MixProject</span> <span style="color: #b877db;">do</span>
   <span style="color: #b877db;">use</span> <span style="color: #87ceeb;">Mix.Project</span>
 
   <span style="color: #b877db;">def</span> <span style="color: #87ceeb;">project</span> <span style="color: #b877db;">do</span>
@@ -581,8 +590,8 @@ install like so (for dev environments only):
 </div>
 </div>
 
-<div id="outline-container-orge1240ca" class="outline-4">
-<h4 id="orge1240ca"><span class="section-number-4">3.2.2.</span> Configuring the <code>tailwind</code> dependency</h4>
+<div id="outline-container-org455a0cd" class="outline-4">
+<h4 id="org455a0cd"><span class="section-number-4">3.2.2.</span> Configuring the <code>tailwind</code> dependency</h4>
 <div class="outline-text-4" id="text-3-2-2">
 <p>
 TailwindCSS looks for a config file <code>tailwind.config.js</code>. This is where you
@@ -602,7 +611,7 @@ These are common (and essential) things you have to do which is great that
 </p>
 
 <div class="org-src-container">
-<pre class="src src-elixir" id="orgc66ca46"><span style="color: #4e5059; font-style: italic;"># </span><span style="color: #4e5059; font-style: italic;">General application configuration</span>
+<pre class="src src-elixir" id="orga92d952"><span style="color: #4e5059; font-style: italic;"># </span><span style="color: #4e5059; font-style: italic;">General application configuration</span>
 <span style="color: #b877db;">import</span> <span style="color: #87ceeb;">Config</span>
 
 <span style="color: #4e5059; font-style: italic;"># </span><span style="color: #4e5059; font-style: italic;">...</span>
@@ -625,8 +634,8 @@ config <span style="color: #59e3e3;">:tailwind</span>,
 </div>
 </div>
 
-<div id="outline-container-org6b43fec" class="outline-4">
-<h4 id="org6b43fec"><span class="section-number-4">3.2.3.</span> Setup hot reload</h4>
+<div id="outline-container-orgefd82e2" class="outline-4">
+<h4 id="orgefd82e2"><span class="section-number-4">3.2.3.</span> Setup hot reload</h4>
 <div class="outline-text-4" id="text-3-2-3">
 <p>
 I also prefer if any change that involves Tailwind would trigger a hot
@@ -634,7 +643,7 @@ reload for it to reflect right away without manually restarting the server.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-elixir" id="org5c887e6"><span style="color: #b877db;">import</span> <span style="color: #87ceeb;">Config</span>
+<pre class="src src-elixir" id="org7b3ba4e"><span style="color: #b877db;">import</span> <span style="color: #87ceeb;">Config</span>
 
 <span style="color: #4e5059; font-style: italic;"># </span><span style="color: #4e5059; font-style: italic;">For development, we disable any cache and enable</span>
 <span style="color: #4e5059; font-style: italic;"># </span><span style="color: #4e5059; font-style: italic;">debugging and code reloading.</span>
@@ -684,8 +693,8 @@ Restart Phoenix (run <code>mix phx.server</code> again), and all that gives us t
 </p>
 
 
-<div id="org2de0a02" class="figure">
-<p><img src="./2.png" alt="2.png" />
+<div id="org68b33c2" class="figure">
+<p><img src="./2.png" alt="2.png" width="100%" />
 </p>
 <p><span class="figure-number">Figure 2: </span>It looks destroyed but what&rsquo;s important is it followed <code>text-red-500</code>.</p>
 </div>
@@ -696,7 +705,7 @@ file with TailwindCSS imports.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-css" id="orga5a9840"><span style="color: #b877db;">@import</span> <span style="color: #fab795;">"tailwindcss/base"</span>;
+<pre class="src src-css" id="orga015abc"><span style="color: #b877db;">@import</span> <span style="color: #fab795;">"tailwindcss/base"</span>;
 <span style="color: #b877db;">@import</span> <span style="color: #fab795;">"tailwindcss/components"</span>;
 <span style="color: #b877db;">@import</span> <span style="color: #fab795;">"tailwindcss/utilities"</span>;
 
@@ -730,8 +739,8 @@ Anyway on to the next thing.
 </div>
 </div>
 
-<div id="outline-container-orgfef4028" class="outline-2">
-<h2 id="orgfef4028"><span class="section-number-2">4.</span> Part 2 - The Landing Page</h2>
+<div id="outline-container-org0fdd5f7" class="outline-2">
+<h2 id="org0fdd5f7"><span class="section-number-2">4.</span> Part 2 - The Landing Page</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 The landing page is the root of the entire website, that is the <code>/</code> route. Now
@@ -740,23 +749,23 @@ all.
 </p>
 </div>
 
-<div id="outline-container-orgac820a1" class="outline-3">
-<h3 id="orgac820a1"><span class="section-number-3">4.1.</span> Routers, controllers, views, and templates</h3>
+<div id="outline-container-org759e1b6" class="outline-3">
+<h3 id="org759e1b6"><span class="section-number-3">4.1.</span> Routers and controllers</h3>
 <div class="outline-text-3" id="text-4-1">
 <p>
 Phoenix is a pretty standard MVC application. In fact, not much has change
 compared to when I last touched this, which was around a year or so ago.
 Everything routing-related can be found in <code>lib/&lt;YOUR_APP&gt;_web/router.ex</code>. In
 my case, what I&rsquo;m interested in is the route that matches <code>/</code>. Well, one already
-exists, and it&rsquo;s what we&rsquo;ve seen in Figure <a href="#org48600c4">1</a>.
+exists, and it&rsquo;s what we&rsquo;ve seen in Figure <a href="#org3620c72">1</a>.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-elixir" id="orga4f768b">scope <span style="color: #fab795;">"/"</span>, <span style="color: #87ceeb;">AngelazydoodlesWeb</span> <span style="color: #b877db;">do</span>
-    pipe_through <span style="color: #59e3e3;">:browser</span>
+<pre class="src src-elixir" id="org6df0646">scope <span style="color: #fab795;">"/"</span>, <span style="color: #87ceeb;">AngelazydoodlesWeb</span> <span style="color: #b877db;">do</span>
+  pipe_through <span style="color: #59e3e3;">:browser</span>
 
-    get <span style="color: #fab795;">"/"</span>, <span style="color: #87ceeb;">PageController</span>, <span style="color: #59e3e3;">:index</span>
-  <span style="color: #b877db;">end</span>
+  get <span style="color: #fab795;">"/"</span>, <span style="color: #87ceeb;">PageController</span>, <span style="color: #59e3e3;">:index</span>
+<span style="color: #b877db;">end</span>
 </pre>
 </div>
 
@@ -772,7 +781,7 @@ And we can check the page controller in
 </p>
 
 <div class="org-src-container">
-<pre class="src src-elixir" id="org260ac0e"><span style="color: #b877db;">defmodule</span> <span style="color: #87ceeb;">AngelazydoodlesWeb.PageController</span> <span style="color: #b877db;">do</span>
+<pre class="src src-elixir" id="orgdd1b818"><span style="color: #b877db;">defmodule</span> <span style="color: #87ceeb;">AngelazydoodlesWeb.PageController</span> <span style="color: #b877db;">do</span>
   <span style="color: #b877db;">use</span> <span style="color: #87ceeb;">AngelazydoodlesWeb</span>, <span style="color: #59e3e3;">:controller</span>
 
   <span style="color: #b877db;">def</span> <span style="color: #87ceeb;">index</span>(conn, <span style="color: #4e5059; font-style: italic;">_params</span>) <span style="color: #b877db;">do</span>
@@ -796,6 +805,193 @@ Note: I&rsquo;m not gonna post the actual template I used since this is commissi
 work.
 </p>
 </blockquote>
+</div>
+</div>
+
+<div id="outline-container-org8b5c338" class="outline-3">
+<h3 id="org8b5c338"><span class="section-number-3">4.2.</span> A new template: <code>.heex</code></h3>
+<div class="outline-text-3" id="text-4-2">
+<p>
+This one is definitely new (for me). The most I&rsquo;ve tried was <code>surface</code>, which
+is a third-party component library for LiveView. But since then, official
+support for LiveView (function) components have popped up, on top of some
+convenient templating syntax. It has a lot more things<sup><a id="fnr.7" class="footref" href="#fn.7" role="doc-backlink">7</a></sup> that I can&rsquo;t
+cover, especially ones that I ended up not using for this one. Feel free to
+read the official docs.
+</p>
+
+<p>
+The generator seems to have used <code>.html.heex</code> as the default, as opposed to
+the old <code>.html.eex</code>. This one was a bit strange to me since I thought it was
+reserved for LiveView templates only. But turns out this isn&rsquo;t the case.
+</p>
+
+<ul class="org-ul">
+<li><code>root.html.heex</code></li>
+<li><code>live.html.heex</code></li>
+<li><code>app.html.heex</code></li>
+<li><code>index.html.heex</code></li>
+</ul>
+
+<p>
+Prior to the <code>HEEx</code> update, all generated pages except <code>live.html.heex</code> had
+the <code>html.eex</code> extension, while <code>live</code> had the <code>html.leex</code> extension. This
+change seems to be a good thing because you can use the new syntax regardless
+of what kind of page you&rsquo;re rendering.
+</p>
+
+<p>
+A Phoenix Framework blog post<sup><a id="fnr.8" class="footref" href="#fn.8" role="doc-backlink">8</a></sup> mentioned this:
+</p>
+
+<blockquote>
+<p>
+[&#x2026;] for HTML-aware template compilation which you’ll see utilized in all
+phoenix generated HTML files going forward (<code>phx.new</code>, <code>phx.gen.html</code>,
+<code>phx.gen.live</code>, etc).
+</p>
+</blockquote>
+</div>
+
+<div id="outline-container-orgd1c9113" class="outline-4">
+<h4 id="orgd1c9113"><span class="section-number-4">4.2.1.</span> Better syntax</h4>
+<div class="outline-text-4" id="text-4-2-1">
+<p>
+Okay, that&rsquo;s a great thing! It also briefly mentions the advantage <code>HEEx</code> has
+over its predecessors:
+</p>
+
+<blockquote>
+<p>
+The new engine not only enforces proper HTML, but provides syntax conveniences
+for rendering components, such as <code>&lt;.form for={@user} id="user-form"&gt;</code>.
+</p>
+</blockquote>
+
+<p>
+Anyway the new function component syntax is pretty nice since I wasn&rsquo;t a fan
+of the <code>&lt;%= live_component ModuleName, ... %&gt;</code> syntax; extremely cumbersome
+to type over and over again. So I could have something like this:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-elixir" id="orgfbcbfc3"><span style="color: #b877db;">defmodule</span> <span style="color: #87ceeb;">AppWeb.Components.Navbar</span> <span style="color: #b877db;">do</span>
+  <span style="color: #b877db;">use</span> <span style="color: #87ceeb;">Phoenix.Component</span>
+
+  <span style="color: #b877db;">def</span> <span style="color: #87ceeb;">navbar</span>(assigns) <span style="color: #b877db;">do</span>
+    ~H<span style="color: #fab795;">"""</span>
+<span style="color: #fab795;">    &lt;nav&gt;</span>
+<span style="color: #fab795;">      Hello &lt;%= @name %&gt;, I am a nav</span>
+
+<span style="color: #fab795;">      &lt;%= for {label, path} &lt;- @nav_items do %&gt;</span>
+<span style="color: #fab795;">        &lt;a href={path}&gt;&lt;%= label %&gt;&lt;/a&gt;</span>
+<span style="color: #fab795;">      &lt;% end %&gt;</span>
+<span style="color: #fab795;">    &lt;/nav&gt;</span>
+<span style="color: #fab795;">    """</span>
+  <span style="color: #b877db;">end</span>
+<span style="color: #b877db;">end</span>
+</pre>
+</div>
+
+<p>
+I can then use this component anywhere as
+<code>&lt;AppWeb.Components.Navbar.navbar name="sekun"/&gt;</code>, or if I imported it to
+the module I&rsquo;m using this in (through <code>import AppWeb.Components.Navbar</code>):
+<code>&lt;.navbar name="sekun" /&gt;</code>. I&rsquo;m not entirely a fan of the leading dot but it
+does seem to distinguish between normal tags and function components, which
+is nice.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org2b20759" class="outline-4">
+<h4 id="org2b20759"><span class="section-number-4">4.2.2.</span> Component slots</h4>
+<div class="outline-text-4" id="text-4-2-2">
+<p>
+They also have slots<sup><a id="fnr.9" class="footref" href="#fn.9" role="doc-backlink">9</a></sup>! Slots make it feel more natural to reuse function
+components. This way I don&rsquo;t have to keep passing everything through
+props/assigns. Also, they do have named slots but this example is a bit
+too simple for that.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-elixir"><span style="color: #b877db;">defmodule</span> <span style="color: #87ceeb;">AppWeb.Components.Navbar</span> <span style="color: #b877db;">do</span>
+  <span style="color: #b877db;">use</span> <span style="color: #87ceeb;">Phoenix.Component</span>
+
+  <span style="color: #b877db;">def</span> <span style="color: #87ceeb;">navbar</span>(assigns) <span style="color: #b877db;">do</span>
+    ~H<span style="color: #fab795;">"""</span>
+<span style="color: #fab795;">    &lt;nav&gt;</span>
+<span style="color: #fab795;">      Hello &lt;%= @name %&gt;, I am a nav</span>
+
+<span style="color: #fab795;">      &lt;%= render_slot(@inner_block) %&gt;</span>
+<span style="color: #fab795;">    &lt;/nav&gt;</span>
+<span style="color: #fab795;">    """</span>
+  <span style="color: #b877db;">end</span>
+
+  <span style="color: #b877db;">def</span> <span style="color: #87ceeb;">nav_item</span>(assigns) <span style="color: #b877db;">do</span>
+    ~H<span style="color: #fab795;">"""</span>
+<span style="color: #fab795;">    &lt;a href={@path}&gt;&lt;%= @label %&gt;&lt;/a&gt;</span>
+<span style="color: #fab795;">    """</span>
+  <span style="color: #b877db;">end</span>
+<span style="color: #b877db;">end</span>
+</pre>
+</div>
+
+<p>
+I can then use this like so:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-elixir"><span style="color: #b877db;">defmodule</span> <span style="color: #87ceeb;">AppWeb.Components.Foo</span> <span style="color: #b877db;">do</span>
+  <span style="color: #b877db;">use</span> <span style="color: #87ceeb;">Phoenix.Component</span>
+
+  <span style="color: #b877db;">import</span> <span style="color: #87ceeb;">AppWeb.Components.Navbar</span>
+
+  <span style="color: #b877db;">def</span> <span style="color: #87ceeb;">some_func</span>(assigns) <span style="color: #b877db;">do</span>
+    ~H<span style="color: #fab795;">"""</span>
+<span style="color: #fab795;">    &lt;.navbar&gt;</span>
+<span style="color: #fab795;">      &lt;%= for {label, path} &lt;- [{"hey", "/"}, {"bye", "/bye"}] do %&gt;</span>
+<span style="color: #fab795;">        &lt;.nav_item label={label} path={path} /&gt;</span>
+<span style="color: #fab795;">      &lt;% end %&gt;</span>
+<span style="color: #fab795;">    &lt;/.navbar&gt;</span>
+<span style="color: #fab795;">    """</span>
+  <span style="color: #b877db;">end</span>
+<span style="color: #b877db;">end</span>
+</pre>
+</div>
+
+
+<div id="org374133d" class="figure">
+<p><img src="./3.png" alt="3.png" width="100%" />
+</p>
+<p><span class="figure-number">Figure 3: </span>Rendering a navbar items with slots.</p>
+</div>
+
+<p>
+Some (old) criticism I have with components and assigns:
+</p>
+
+<ul class="org-ul">
+<li>I want to be able to mark props as required. Checking if some field
+exists in <code>assigns</code> is not enforced, and is instead pushed to runtime.
+Granted, it&rsquo;s nice to mark some as optional with default values. But
+some components don&rsquo;t make sense without some props.</li>
+<li>No distinction between props and internal state. I don&rsquo;t mean in how you
+use it with <code>@some_var</code>. More on, it would be nice to be able to define
+props <i>declaratively</i>, as well as internal state.</li>
+</ul>
+
+<p>
+Both of these points<sup><a id="fnr.10" class="footref" href="#fn.10" role="doc-backlink">10</a></sup><sup>, </sup><sup><a id="fnr.11" class="footref" href="#fn.11" role="doc-backlink">11</a></sup> are addressed by a third-party component
+library called <code>surface</code>!
+</p>
+
+<p>
+Since this project is small in scope, it isn&rsquo;t that big of a deal. But I
+can imagine this being a bit difficult to trace since there are more things
+for your mind to remember, rather than have the compiler take care of it.
+</p>
+</div>
 </div>
 </div>
 </div>
@@ -828,12 +1024,32 @@ TailwindCSS standalone build <a href="https://tailwindcss.com/blog/standalone-cl
 Tailwind Standalone for Phoenix <a href="https://fly.io/phoenix-files/tailwind-standalone/">https://fly.io/phoenix-files/tailwind-standalone/</a>
 </p></div></div>
 
+<div class="footdef"><sup><a id="fn.7" class="footnum" href="#fnr.7" role="doc-backlink">7</a></sup> <div class="footpara" role="doc-footnote"><p class="footpara">
+Assigns and HEEx templates <a href="https://hexdocs.pm/phoenix_live_view/assigns-eex.html">https://hexdocs.pm/phoenix_live_view/assigns-eex.html</a>
+</p></div></div>
+
+<div class="footdef"><sup><a id="fn.8" class="footnum" href="#fnr.8" role="doc-backlink">8</a></sup> <div class="footpara" role="doc-footnote"><p class="footpara">
+Phoenix 1.6.0 Released <a href="https://www.phoenixframework.org/blog/phoenix-1.6-released">https://www.phoenixframework.org/blog/phoenix-1.6-released</a>
+</p></div></div>
+
+<div class="footdef"><sup><a id="fn.9" class="footnum" href="#fnr.9" role="doc-backlink">9</a></sup> <div class="footpara" role="doc-footnote"><p class="footpara">
+<code>Phoenix.Component</code> slots <a href="https://hexdocs.pm/phoenix_live_view/Phoenix.Component.html#module-slots">https://hexdocs.pm/phoenix_live_view/Phoenix.Component.html#module-slots</a>
+</p></div></div>
+
+<div class="footdef"><sup><a id="fn.10" class="footnum" href="#fnr.10" role="doc-backlink">10</a></sup> <div class="footpara" role="doc-footnote"><p class="footpara">
+Surface UI Properties <a href="https://surface-ui.org/properties">https://surface-ui.org/properties</a>
+</p></div></div>
+
+<div class="footdef"><sup><a id="fn.11" class="footnum" href="#fnr.11" role="doc-backlink">11</a></sup> <div class="footpara" role="doc-footnote"><p class="footpara">
+Surface UI State <a href="https://surface-ui.org/state_management">https://surface-ui.org/state_management</a>
+</p></div></div>
+
 
 </div>
 </div></div>
 <div id="postamble" class="status">
 <p class="author">Author: SEKUN</p>
-<p class="date">Created: 2022-01-28 Fri 15:42</p>
+<p class="date">Created: 2022-01-28 Fri 18:05</p>
 </div>
 </body>
 </html>

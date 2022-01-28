@@ -7,11 +7,6 @@ writing my first ever dev blog post about web dev, because I need something to
 show in case I start looking for a web dev position. Hello (maybe) future employer,
 I know how to code, I swear.
 
-#+BEGIN_QUOTE
-Well, I also did spend the past 43 days without internet and electricity so
-lately I've been completely wasting my time doing nothing. It doesn't feel good.
-#+END_QUOTE
-
 Developing web applications (or simple websites) without ever touching JS has
 always been appealing to me. I don't wish to work with it at all, and due to
 that, I don't remember much of its horrid standard library, and other shenanigans
@@ -23,15 +18,24 @@ for this to just be a blog about why I hate JS. It is, after all, a blog about
 So, title, no, I don't mean for No JS to be
 /yet another fundamentally different JS framework/. Rather I don't want to deal
 with JS when building applications. Sometimes I won't have a choice, but a lot
-of the times I actually /can/ avoid it.
+of the times I actually /can/ avoid most of it.
 
 I also know it's impossible to completely avoid JS if you want any form of
 interactivity on the internet. My point is that I want to avoid dealing with it,
 not completely getting rid of it. There are actual plain HTML + CSS pages with 0
 JS, but the lack of interactivity is not too fun.
 
+#+BEGIN_QUOTE
+*NOTE*: This is not meant to be a tutorial. Copying all the code snippets here,
+especially the template files, won't give you the same result as the screenshots
+without more legwork. This is intentional because this project is not meant to
+be open sourced!
+
+I may make an actual tutorial in the future, but this isn't it.
+#+END_QUOTE
+
 * The Project
-I'm migrating away from a simple project (Svelte + Strapi). I still need to
+I'm migrating a simple project away from Svelte. I still need to
 keep Strapi because its admin interface and loads of other CMS features are
 just too useful for me to pass up on. But Svelte has been a thorn on my side
 because I simply don't have the time to explore the million different ways
@@ -39,9 +43,8 @@ on how to perform SSR (server-side rendering). In retrospect, using it was a
 bad idea just solely with that reason. I spent around an hour trying to figure
 out how to do SSR so that I Google can crawl through it without going through
 a queue, but eventually gave up because there were a million caveats that I
-had to consider.
-
-Quite frankly, I'm getting too old to deal with new weekly frameworks.
+had to consider. Quite frankly, I'm getting too old to deal with new weekly
+frameworks.
 
 The project is simple: it's a portfolio of a digital artist,
 AngelazyDoodles[fn:1], and her portfolio consists of the following:
@@ -172,6 +175,8 @@ Run =mix phx.server=, and it'll be served in http://localhost:4000.
 
 #+CAPTION: The default page for every Phoenix application
 #+NAME:   fig:1-1
+#+attr_html: :width 100%
+#+attr_latex: :width 100%
 [[./1.png]]
 
 Beautiful.
@@ -340,6 +345,8 @@ Restart Phoenix (run =mix phx.server= again), and all that gives us this:
 
 #+CAPTION: It looks destroyed but what's important is it followed =text-red-500=.
 #+NAME:   fig:1-2
+#+attr_html: :width 100%
+#+attr_latex: :width 100%
 [[./2.png]]
 
 So if you check `assets/app.css`, you'll notice that it prepended the
@@ -377,7 +384,7 @@ The landing page is the root of the entire website, that is the =/= route. Now
 because I don't need any interactivity, I don't have to reach for LiveView at
 all.
 
-** Routers, controllers, views, and templates
+** Routers and controllers
 Phoenix is a pretty standard MVC application. In fact, not much has change
 compared to when I last touched this, which was around a year or so ago.
 Everything routing-related can be found in =lib/<YOUR_APP>_web/router.ex=. In
@@ -387,10 +394,10 @@ exists, and it's what we've seen in Figure [[fig:1-1]].
 #+NAME: router.ex
 #+BEGIN_SRC elixir :results silent
 scope "/", AngelazydoodlesWeb do
-    pipe_through :browser
+  pipe_through :browser
 
-    get "/", PageController, :index
-  end
+  get "/", PageController, :index
+end
 #+END_SRC
 
 Here it tells us that I have a =get= request for the route =/=, and some
@@ -422,6 +429,147 @@ Note: I'm not gonna post the actual template I used since this is commissioned
 work.
 #+END_QUOTE
 
+** A new template: =.heex=
+This one is definitely new (for me). The most I've tried was =surface=, which
+is a third-party component library for LiveView. But since then, official
+support for LiveView (function) components have popped up, on top of some
+convenient templating syntax. It has a lot more things[fn:7] that I can't
+cover, especially ones that I ended up not using for this one. Feel free to
+read the official docs.
+
+The generator seems to have used =.html.heex= as the default, as opposed to
+the old =.html.eex=. This one was a bit strange to me since I thought it was
+reserved for LiveView templates only. But turns out this isn't the case.
+
++ =root.html.heex=
++ =live.html.heex=
++ =app.html.heex=
++ =index.html.heex=
+
+Prior to the =HEEx= update, all generated pages except =live.html.heex= had
+the =html.eex= extension, while =live= had the =html.leex= extension. This
+change seems to be a good thing because you can use the new syntax regardless
+of what kind of page you're rendering.
+
+A Phoenix Framework blog post[fn:8] mentioned this:
+
+#+BEGIN_QUOTE
+[...] for HTML-aware template compilation which you’ll see utilized in all
+phoenix generated HTML files going forward (=phx.new=, =phx.gen.html=,
+=phx.gen.live=, etc).
+#+END_QUOTE
+
+*** Better syntax
+Okay, that's a great thing! It also briefly mentions the advantage =HEEx= has
+over its predecessors:
+
+#+BEGIN_QUOTE
+The new engine not only enforces proper HTML, but provides syntax conveniences
+for rendering components, such as ~<.form for={@user} id="user-form">~.
+#+END_QUOTE
+
+Anyway the new function component syntax is pretty nice since I wasn't a fan
+of the ~<%= live_component ModuleName, ... %>~ syntax; extremely cumbersome
+to type over and over again. So I could have something like this:
+
+#+NAME: navbar_example.ex
+#+BEGIN_SRC elixir :results silent
+defmodule AppWeb.Components.Navbar do
+  use Phoenix.Component
+
+  def navbar(assigns) do
+    ~H"""
+    <nav>
+      Hello <%= @name %>, I am a nav
+
+      <%= for {label, path} <- @nav_items do %>
+        <a href={path}><%= label %></a>
+      <% end %>
+    </nav>
+    """
+  end
+end
+#+END_SRC
+
+I can then use this component anywhere as
+~<AppWeb.Components.Navbar.navbar name="sekun"/>~, or if I imported it to
+the module I'm using this in (through =import AppWeb.Components.Navbar=):
+~<.navbar name="sekun" />~. I'm not entirely a fan of the leading dot but it
+does seem to distinguish between normal tags and function components, which
+is nice.
+
+*** Component slots
+
+They also have slots[fn:9]! Slots make it feel more natural to reuse function
+components. This way I don't have to keep passing everything through
+props/assigns. Also, they do have named slots but this example is a bit
+too simple for that.
+
+#+BEGIN_SRC elixir :results silent
+defmodule AppWeb.Components.Navbar do
+  use Phoenix.Component
+
+  def navbar(assigns) do
+    ~H"""
+    <nav>
+      Hello <%= @name %>, I am a nav
+
+      <%= render_slot(@inner_block) %>
+    </nav>
+    """
+  end
+
+  def nav_item(assigns) do
+    ~H"""
+    <a href={@path}><%= @label %></a>
+    """
+  end
+end
+#+END_SRC
+
+I can then use this like so:
+
+#+BEGIN_SRC elixir :results silent
+defmodule AppWeb.Components.Foo do
+  use Phoenix.Component
+
+  import AppWeb.Components.Navbar
+
+  def some_func(assigns) do
+    ~H"""
+    <.navbar>
+      <%= for {label, path} <- [{"hey", "/"}, {"bye", "/bye"}] do %>
+        <.nav_item label={label} path={path} />
+      <% end %>
+    </.navbar>
+    """
+  end
+end
+#+END_SRC
+
+#+CAPTION: Rendering a navbar items with slots.
+#+NAME: fig:withnav
+#+attr_html: :width 100%
+#+attr_latex: :width 100%
+[[./3.png]]
+
+Some (old) criticism I have with components and assigns:
+
++ I want to be able to mark props as required. Checking if some field
+  exists in =assigns= is not enforced, and is instead pushed to runtime.
+  Granted, it's nice to mark some as optional with default values. But
+  some components don't make sense without some props.
++ No distinction between props and internal state. I don't mean in how you
+  use it with =@some_var=. More on, it would be nice to be able to define
+  props /declaratively/, as well as internal state.
+
+Both of these points[fn:10][fn:11] are addressed by a third-party component
+library called =surface=!
+
+Since this project is small in scope, it isn't that big of a deal. But I
+can imagine this being a bit difficult to trace since there are more things
+for your mind to remember, rather than have the compiler take care of it.
+
 [fn:1] AngelazyDoodles is an awesome digital artist https://angelazydoodles.com
 [fn:2] Fly.io https://fly.io
 [fn:3] I'm aware that other services like Gigalixir/Heroku/Render exist, but
@@ -429,3 +577,8 @@ it's either it's too expensive, or they don't have regions outside US/EU.
 [fn:4] Phoenix has great docs for this https://hexdocs.pm/phoenix/overview.html
 [fn:5] TailwindCSS standalone build https://tailwindcss.com/blog/standalone-cli
 [fn:6] Tailwind Standalone for Phoenix https://fly.io/phoenix-files/tailwind-standalone/
+[fn:7] Assigns and HEEx templates https://hexdocs.pm/phoenix_live_view/assigns-eex.html
+[fn:8] Phoenix 1.6.0 Released https://www.phoenixframework.org/blog/phoenix-1.6-released
+[fn:9] =Phoenix.Component= slots https://hexdocs.pm/phoenix_live_view/Phoenix.Component.html#module-slots
+[fn:10] Surface UI Properties https://surface-ui.org/properties
+[fn:11] Surface UI State https://surface-ui.org/state_management
