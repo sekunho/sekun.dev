@@ -1,0 +1,1 @@
+call "%~dp0\sekun" eval Sekun.Release.migrate

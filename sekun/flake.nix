@@ -24,7 +24,7 @@
             flyctl
           ];
 
-	  # Need this for EVM to be happy.
+          # Need this for EVM to be happy.
           shellHook = ''
             export LANG="en_US.UTF-8";
             export LC_TYPE="en_US.UTF-8";

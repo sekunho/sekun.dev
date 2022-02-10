@@ -5,6 +5,8 @@ defmodule Sekun.Application do
 
   use Application
 
+  import Sekun.Release
+
   @impl true
   def start(_type, _args) do
     children = [
@@ -19,6 +21,11 @@ defmodule Sekun.Application do
       # Start a worker by calling: Sekun.Worker.start_link(arg)
       # {Sekun.Worker, arg}
     ]
+
+    # Hah lol
+    if Application.get_env(:sekun, :env) == :prod do
+      ecto_setup()
+    end
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

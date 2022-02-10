@@ -20,6 +20,8 @@ if config_env() == :prod do
       For example: /etc/sekun/sekun.db
       """
 
+  IO.inspect(database_path, label: "DB PATH")
+
   config :sekun, Sekun.Repo,
     database: database_path,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "5")
@@ -36,11 +38,11 @@ if config_env() == :prod do
       You can generate one by calling: mix phx.gen.secret
       """
 
-  host = System.get_env("PHX_HOST") || "example.com"
   port = String.to_integer(System.get_env("PORT") || "4000")
 
   config :sekun, SekunWeb.Endpoint,
-    url: [host: host, port: 443],
+    server: true,
+    url: [host: "sekun.dev", port: 443],
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
@@ -49,7 +51,11 @@ if config_env() == :prod do
       ip: {0, 0, 0, 0, 0, 0, 0, 0},
       port: port
     ],
-    secret_key_base: secret_key_base
+    secret_key_base: secret_key_base,
+    check_origin: ["//sekun.dev", "//sekun.fly.dev"]
+
+  config :sekun,
+    env: :prod
 
   # ## Using releases
   #
