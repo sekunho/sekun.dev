@@ -88,6 +88,8 @@ defmodule SekunWeb.Component.Card do
           </div>
         <% else %>
           <img
+            loading="lazy"
+            alt={"A photo of the project called " <> @title}
             class="rounded-xl aspect-video shadow-lg dark:shadow-none"
             src={Routes.static_path(@socket, @media)} />
         <% end %>
