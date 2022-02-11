@@ -20,8 +20,6 @@ if config_env() == :prod do
       For example: /etc/sekun/sekun.db
       """
 
-  IO.inspect(database_path, label: "DB PATH")
-
   config :sekun, Sekun.Repo,
     database: database_path,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "5")
@@ -52,8 +50,9 @@ if config_env() == :prod do
       port: port
     ],
     secret_key_base: secret_key_base,
-    check_origin: ["//sekun.dev", "//sekun.fly.dev"]
+    check_origin: ["//sekun.dev", "//sekun.fly.dev", "//www.sekun.dev"]
 
+  # I could probably just use `config_env()` but this is much shorter lol.
   config :sekun,
     env: :prod
 

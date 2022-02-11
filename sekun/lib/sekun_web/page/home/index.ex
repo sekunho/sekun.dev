@@ -12,6 +12,13 @@ defmodule SekunWeb.Page.HomeLive.Index do
     {:ok, assign(socket, loading: true), temporary_assigns: [projects: nil]}
   end
 
+  # TODO: Work on blog section. Thinking of having Phoenix serve the static
+  # files that Hakyll generates. Also, parse the RSS feed and display the contents
+  # on the recent blog posts section.
+
+  # TODO: Work on the portfolio page. This will be where all of the projects
+  # will be if it's not featured. Would be nice to sort by tags, and other filters.
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -32,12 +39,6 @@ defmodule SekunWeb.Page.HomeLive.Index do
 
       <!-- Featured projects section -->
       <div class="min-h-screen space-y-12 w-full">
-        <!--
-        <h2 class="text-center text-4xl font-serif text-su-fg dark:text-su-dark-fg">
-          Featured Projects
-        </h2>
-        -->
-
         <div id="featured-projects" class="sm:space-y-24 space-y-16">
           <%= if @loading do %>
             <.card {assigns} loading={@loading} />

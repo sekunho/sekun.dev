@@ -56,12 +56,13 @@ config :sekun, SekunWeb.Endpoint,
     patterns: [
       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"priv/gettext/.*(po)$",
-      ~r"lib/sekun_web/(live|views)/.*(ex)$",
+      ~r"lib/sekun_web/(page|views)/.*(ex)$",
       ~r"lib/sekun_web/templates/.*(eex)$"
     ]
   ]
 
-# This is for `application.ex`
+# This is for `application.ex` to detect if it should run the DB operations.
+# I could probably just use `config_env()` but this is much shorter lol.
 config :sekun,
   env: :dev
 

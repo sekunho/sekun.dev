@@ -22,7 +22,10 @@ defmodule Sekun.Application do
       # {Sekun.Worker, arg}
     ]
 
-    # Hah lol
+    # Checks if it needs to perform the DB operations on boot. I'm only using
+    # this for production, because there are no other (proper) ways to run
+    # migrations for sqlite. Although this would be a different story if I was
+    # running PostgreSQL.
     if Application.get_env(:sekun, :env) == :prod do
       ecto_setup()
     end
