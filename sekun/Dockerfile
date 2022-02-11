@@ -50,8 +50,11 @@ COPY priv priv
 # step down so that `lib` is available.
 COPY assets assets
 
-# compile assets
+# This has to be before compiling the assets because Tailwind does
+# class purging in that stage.
 COPY lib lib
+
+# compile assets
 RUN mix assets.deploy
 
 RUN ls -la priv/static/assets/
