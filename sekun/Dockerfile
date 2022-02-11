@@ -51,10 +51,13 @@ COPY priv priv
 COPY assets assets
 
 # compile assets
+COPY lib lib
 RUN mix assets.deploy
 
+RUN ls -la priv/static/assets/
+RUN cat priv/static/assets/app.css
+
 # Compile the release
-COPY lib lib
 
 RUN mix compile
 

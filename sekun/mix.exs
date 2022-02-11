@@ -64,7 +64,8 @@ defmodule Sekun.MixProject do
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
-      "assets.deploy": ["esbuild default --minify", "phx.digest"]
+      "tailwind.build": ["tailwind default --config=tailwind.config.js --input=./css/app.css --output=../priv/static/assets/app.css --minify"],
+      "assets.deploy": ["tailwind.build", "esbuild default --minify", "phx.digest"]
     ]
   end
 end
