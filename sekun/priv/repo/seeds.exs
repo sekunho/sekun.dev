@@ -23,13 +23,13 @@ Repo.insert!(%Entry{
       website_url: "https://angelazydoodles.com",
       learnings_url: nil,
       featured?: true,
-      tags: ["elixir", "phoenix", "liveview", "docker", "tailwindcss", "strapi", "sqlite3", "fly.io"]
+      tags: ["elixir", "phoenix", "liveview", "docker", "tailwindcss", "strapi", "sqlite3", "fly.io", "github actions"]
 })
 
 Repo.insert!(%Entry{
       id: 2,
       title: "swapi",
-      description: "swapi-client is a Haskell client library for the Star Wars API",
+      description: "swoogle is a Star Wars search engine that uses a Haskell client library to interact with the Star Wars API",
       github_owner: "sekunho",
       github_repo: "swapi",
       icon: "",
@@ -37,7 +37,7 @@ Repo.insert!(%Entry{
       website_url: nil,
       learnings_url: nil,
       featured?: true,
-      tags: ["haskell", "api-client", "nix"]
+      tags: ["haskell", "web", "stack", "nix", "fly.io", "docker", "github actions"]
 })
 
 Repo.insert!(%Entry{
@@ -79,7 +79,7 @@ Repo.insert!(%Entry{
       website_url: "https://sekun.dev/",
       learnings_url: nil,
       featured?: true,
-      tags: ["elixir", "phoenix", "liveview", "tailwindcss", "sqlite3", "fly.io", "nix"]
+      tags: ["elixir", "phoenix", "liveview", "tailwindcss", "sqlite3", "fly.io", "nix", "docker", "github actions"]
 })
 
 Repo.insert!(%Entry{
