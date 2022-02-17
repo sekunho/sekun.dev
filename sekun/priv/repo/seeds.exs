@@ -14,6 +14,21 @@ alias Sekun.Projects.Entry
 
 Repo.insert!(%Entry{
       id: 1,
+      title: "swoogle",
+      description: "swoogle is a Star Wars search engine. It uses a Haskell client library I wrote that interacts with swapi.dev.",
+      github_owner: "sekunho",
+      github_repo: "swoogle",
+      icon: "",
+      media: "/images/projects/swoogle.webp",
+      website_url: "https://swoogle.sekun.dev",
+      learnings_url: nil,
+      featured?: true,
+      tags: ["haskell", "web", "stack", "nix", "fly.io", "docker", "github actions", "esbuild", "tailwindcss"]
+})
+
+
+Repo.insert!(%Entry{
+      id: 2,
       title: "Angelazy Doodles",
       description: "The official portfolio & catalogue of Angelazy Doodles",
       github_owner: nil,
@@ -24,20 +39,6 @@ Repo.insert!(%Entry{
       learnings_url: nil,
       featured?: true,
       tags: ["elixir", "phoenix", "liveview", "docker", "tailwindcss", "strapi", "sqlite3", "fly.io", "github actions"]
-})
-
-Repo.insert!(%Entry{
-      id: 2,
-      title: "swapi",
-      description: "swoogle is a Star Wars search engine that uses a Haskell client library to interact with the Star Wars API",
-      github_owner: "sekunho",
-      github_repo: "swapi",
-      icon: "",
-      media: "/images/projects/swapi.webp",
-      website_url: nil,
-      learnings_url: nil,
-      featured?: true,
-      tags: ["haskell", "web", "stack", "nix", "fly.io", "docker", "github actions"]
 })
 
 Repo.insert!(%Entry{
