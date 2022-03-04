@@ -1,6 +1,8 @@
 defmodule SekunWeb.Component.Navbar do
   use Phoenix.Component
 
+  import Phoenix.HTML.Link
+
   def navbar(assigns) do
     ~H"""
     <nav class="bg-white dark:bg-su-dark-bg">
@@ -36,10 +38,19 @@ defmodule SekunWeb.Component.Navbar do
             <div class="hidden sm:block sm:ml-6">
               <div class="flex space-x-4">
                 <%= for link <- @link do %>
-                  <%= live_redirect to: link.to,
-                    class: active_class(link.to, link.current_path),
-                    aria_current: "page" do %>
-                    <%= render_slot(link) %>
+                  <%= if link.external do %>
+                    <%= link to: link.to,
+                      class: active_class(link.to, link.current_path),
+                      aria_current: "page" do %>
+                      <%= render_slot(link) %>
+                    <% end %>
+
+                  <% else %>
+                    <%= live_redirect to: link.to,
+                      class: active_class(link.to, link.current_path),
+                      aria_current: "page" do %>
+                      <%= render_slot(link) %>
+                    <% end %>
                   <% end %>
                 <% end %>
               </div>

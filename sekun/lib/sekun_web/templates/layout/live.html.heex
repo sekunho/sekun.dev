@@ -1,18 +1,12 @@
-<%= if false do %>
 <.navbar>
-  <:link to={Routes.home_index_path(@socket, :index)} current_path={@current_path}>
+  <:link external={false} to={Routes.home_index_path(@socket, :index)} current_path={@current_path}>
     Home
   </:link>
 
-  <:link to={"/portfolio"} current_path={@current_path}>
-    Portfolio
-  </:link>
-
-  <:link to={"/blog"} current_path={@current_path}>
+  <:link external={true} to={"https://blog.sekun.dev"} current_path={@current_path}>
     Blog
   </:link>
 </.navbar>
-<% end %>
 
 <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
   <div class="max-w-6xl mx-auto">
