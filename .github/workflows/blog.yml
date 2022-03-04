@@ -1,0 +1,46 @@
+name: Deploy blog
+
+on:
+  push:
+    paths:
+      - 'blog/**'
+      - '.github/workflows/blog.yml'
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-20.04
+    defaults:
+      run:
+        working-directory: blog
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Nix
+        uses: cachix/install-nix-action@v15
+        with:
+          extra_nix_config: |
+            trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+            substituters = https://hydra.iohk.io https://cache.nixos.org/
+      - run: nix flake show
+
+      - uses: actions/cache@v2
+        name: Cache /nix/store
+        with:
+          path: /nix/store
+          key: ${{ runner.os }}-${{ hashFiles('flake.lock') }}
+
+      - name: Build blog
+        run: nix develop --command hugo --minify
+
+      - name: Dump config for custom domain
+        run: echo 'blog.sekun.dev' > doc/CNAME
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        if: ${{ github.ref == 'refs/heads/main' }}
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./blog/public
+

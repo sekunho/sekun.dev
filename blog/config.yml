@@ -1,0 +1,55 @@
+baseURL: https://blog.sekun.dev
+languageCode: en-us
+paginate: 5
+theme: PaperMod
+title: sekun's blog
+
+outputs:
+  home:
+    - HTML
+    - RSS
+    - JSON
+
+params:
+  ShowCodeCopyButtons: true
+  ShowReadingTime: true
+
+  homeInfoParams:
+    Title: "Hi there \U0001F44B"
+    Content: I'm sekun, and I like programming stuff
+
+  socialIcons:
+    - name: twitter
+      url: "https://twitter.com/hsekun"
+    - name: github
+      url: "https://github.com/sekunho"
+
+  editPost:
+    URL: "https://github.com/sekunho/sekun.dev/tree/main/blog"
+    Text: "Suggest Changes"
+    appendFilePath: true
+
+  fuseOpts:
+    isCaseSensitive: false
+    shouldSort: true
+    location: 0
+    distance: 1000
+    threshold: 0.4
+    minMatchCharLength: 0
+    keys: ["title", "permalink", "summary", "content"]
+
+menu:
+  main:
+    - identifier: posts
+      name: posts
+      url: /posts/
+      weight: 10
+    - identifier: tags
+      name: tags
+      url: /tags/
+      weight: 20
+    - identifier: search
+      name: search
+      url: /archive/
+      weight: 30
+
