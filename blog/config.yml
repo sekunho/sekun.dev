@@ -25,7 +25,7 @@ params:
       url: "https://github.com/sekunho"
 
   editPost:
-    URL: "https://github.com/sekunho/sekun.dev/tree/main/blog"
+    URL: "https://github.com/sekunho/sekun.dev/tree/main/blog/content"
     Text: "Suggest Changes"
     appendFilePath: true
 
