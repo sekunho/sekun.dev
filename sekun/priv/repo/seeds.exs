@@ -49,7 +49,7 @@ Repo.insert!(%Entry{
       github_repo: "fen_gen",
       icon: "",
       media: "/images/projects/fen_gen.webp",
-      website_url: "https://fen.sekun.dev",
+      website_url: nil,
       learnings_url: nil,
       featured?: true,
       tags: ["elixir", "python", "tensorflow", "phoenix", "liveview", "tailwindcss"]
