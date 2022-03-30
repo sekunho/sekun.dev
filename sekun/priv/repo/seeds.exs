@@ -12,8 +12,22 @@
 alias Sekun.Repo
 alias Sekun.Projects.Entry
 
+Repo.insert(%Entry{
+  id: 1,
+  title: "emojied",
+  description: "Shorten URLs with just emojis",
+  github_owner: "sekunho",
+  github_repo: "emojied",
+  icon: "",
+  media: "/images/projects/emojied.webp",
+  website_url: nil,
+  learnings_url: nil,
+  featured?: true,
+  tags: ["rust", "axum", "tokio", "typescript", "esbuild", "tailwindcss"]
+})
+
 Repo.insert!(%Entry{
-      id: 1,
+      id: 2,
       title: "swoogle",
       description: "swoogle is a Star Wars search engine. It uses a Haskell client library I wrote that interacts with swapi.dev.",
       github_owner: "sekunho",
@@ -28,7 +42,7 @@ Repo.insert!(%Entry{
 
 
 Repo.insert!(%Entry{
-      id: 2,
+      id: 3,
       title: "Angelazy Doodles",
       description: "The official portfolio & catalogue of Angelazy Doodles",
       github_owner: nil,
@@ -42,7 +56,7 @@ Repo.insert!(%Entry{
 })
 
 Repo.insert!(%Entry{
-      id: 3,
+      id: 4,
       title: "FENGEN",
       description: "Generate Forsyth-Edward notations from a chess board image",
       github_owner: "sekunho",
@@ -56,7 +70,7 @@ Repo.insert!(%Entry{
 })
 
 Repo.insert!(%Entry{
-      id: 4,
+      id: 5,
       title: "Butler",
       description: "An automated to-do scheduler based on your availability",
       github_owner: "butlerph",
@@ -70,7 +84,7 @@ Repo.insert!(%Entry{
 })
 
 Repo.insert!(%Entry{
-      id: 5,
+      id: 6,
       title: "sekun.dev",
       description: "Something something recursion",
       github_owner: "sekunho",
@@ -84,7 +98,7 @@ Repo.insert!(%Entry{
 })
 
 Repo.insert!(%Entry{
-      id: 6,
+      id: 7,
       title: "Exypnox",
       description: "Exypnox is a Philippine-based company that provides the common tools needed in a business",
       github_owner: nil,
@@ -93,6 +107,6 @@ Repo.insert!(%Entry{
       media: "/images/projects/exypnox.webp",
       website_url: "https://exypnox.com/",
       learnings_url: nil,
-      featured?: true,
+      featured?: false,
       tags: ["html", "tailwindcss", "nix"]
 })
