@@ -4,6 +4,11 @@ paginate: 5
 theme: PaperMod
 title: sekun's blog
 
+markup:
+  goldmark:
+    renderer:
+      unsafe: true
+
 outputs:
   home:
     - HTML
