@@ -21,7 +21,7 @@ Repo.insert(%Entry{
   icon: "",
   media: "/images/projects/emojied.webp",
   website_url: "https://emojied.net",
-  learnings_url: nil,
+  learnings_url: "https://blog.sekun.dev/posts/what-i-learned-from-building-a-rust-emoji-url-shortener",
   featured?: true,
   tags: ["rust", "axum", "tokio", "typescript", "esbuild", "tailwindcss"]
 })
