@@ -20,6 +20,8 @@
 
             # Dev tools
             elixir_ls
+            rustc
+            cargo
             inotify-tools
             flyctl
           ];

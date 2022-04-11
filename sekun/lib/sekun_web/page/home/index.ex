@@ -2,14 +2,18 @@ defmodule SekunWeb.Page.HomeLive.Index do
   use Phoenix.LiveView, layout: {SekunWeb.LayoutView, "live.html"}
 
   import SekunWeb.Component.Card
+  import Phoenix.HTML.Link
 
   alias SekunWeb.Router.Helpers, as: Routes
 
   @impl true
   def mount(_, _, socket) do
-    send(self(), :load_featured_projects)
+    socket =
+      socket
+      |> fetch_projects()
+      |> fetch_posts()
 
-    {:ok, assign(socket, loading: true), temporary_assigns: [projects: nil]}
+    {:ok, socket, temporary_assigns: [projects: nil, posts: nil]}
   end
 
   # TODO: Work on blog section. Thinking of having Phoenix serve the static
@@ -40,28 +44,23 @@ defmodule SekunWeb.Page.HomeLive.Index do
       <!-- Featured projects section -->
       <div class="min-h-screen space-y-12 w-full">
         <div id="featured-projects" class="sm:space-y-24 space-y-16">
-          <%= if @loading do %>
-            <.card {assigns} loading={@loading} />
-            <.card {assigns} loading={true} />
-          <% else %>
-            <%= for project <- @projects do %>
-              <div id={"project - " <> Integer.to_string(project.id)}>
-                <.card {assigns}
-                  tags={ project.tags }
-                  loading={@loading}
-                  title={ project.title }
-                  description={ project.description}
-                  icon={ project.icon }
-                  media={ project.media }
-                  github_owner={ project.github_owner }
-                  github_repo={ project.github_repo }
-                  website_url={ project.website_url }
-                  learnings_url={ project.learnings_url }
-                  youtube_url={ project.youtube_url }
-                  github_url={ github_url(project.github_owner, project.github_repo) }
-                  />
-              </div>
-            <% end %>
+          <%= for project <- @projects do %>
+            <div id={"project - " <> Integer.to_string(project.id)}>
+              <.card {assigns}
+                tags={ project.tags }
+                loading={false}
+                title={ project.title }
+                description={ project.description}
+                icon={ project.icon }
+                media={ project.media }
+                github_owner={ project.github_owner }
+                github_repo={ project.github_repo }
+                website_url={ project.website_url }
+                learnings_url={ project.learnings_url }
+                youtube_url={ project.youtube_url }
+                github_url={ github_url(project.github_owner, project.github_repo) }
+                />
+            </div>
           <% end %>
 
           <!--
@@ -79,49 +78,43 @@ defmodule SekunWeb.Page.HomeLive.Index do
       </div>
 
       <!-- Blog section -->
-      <div class="py-24 w-full space-y-4 sm:space-y-12">
-        <h2 class="text-4xl font-serif text-su-fg dark:text-su-dark-fg">
+      <div id="posts" class="py-24 w-full space-y-4 sm:space-y-12">
+        <a href="#posts" class="text-4xl font-serif text-su-fg dark:text-su-dark-fg hover:underline">
           Recent Posts
-        </h2>
-        <div class="text-su-fg dark:text-su-dark-fg opacity-70">
-          Still working on it. It'll be here when it gets here!
-        </div>
-        <%= if false do %>
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-16 w-full">
-            <%= for _ <- 1..8 do %>
-              <div class="bg-su-bg-alt dark:bg-su-dark-bg-alt h-72 rounded-lg animate-pulse">
-              </div>
-            <% end %>
-          </div>
-          <%= live_redirect to: Routes.home_index_path(@socket, :index), class: "hover:animate-pulse flex items-center justify-center space-x-2 text-lg text-su-fg dark:text-su-dark-fg" do %>
-            <span>
-              View all posts
-            </span>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
+        </a>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-16 w-full">
+          <%= for post <- @posts do %>
+            <div class="text-su-fg dark:text-su-dark-fg">
+              <a href={post["link"]} class="font-semibold text-2xl font-serif hover:underline">
+                <%= post["title"] %>
+              </a>
+              <p class="font-sans opacity-70 truncate"><%= Phoenix.HTML.raw(post["description"]) %></p>
+            </div>
           <% end %>
+        </div>
+        <%= link to: "https://blog.sekun.dev", class: "hover:animate-pulse flex items-center justify-center space-x-2 text-lg text-su-fg dark:text-su-dark-fg" do %>
+          <span>
+            View all posts
+          </span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+          </svg>
         <% end %>
       </div>
     </div>
     """
   end
 
-  @impl true
-  def handle_info(event, socket) do
-    socket =
-      case event do
-        :load_featured_projects ->
-          projects = Sekun.Projects.list_featured()
+  defp fetch_projects(socket) do
+    projects = Sekun.Projects.list_featured()
 
-          socket
-          |> assign(projects: projects)
-          |> assign(loading: false)
+    assign(socket, projects: projects)
+  end
 
-        _ -> socket
-      end
+  defp fetch_posts(socket) do
+    posts = Sekun.Posts.list()
 
-    {:noreply, socket}
+    assign(socket, posts: posts)
   end
 
   defp github_url(owner, repo) do

@@ -49,6 +49,8 @@ defmodule Sekun.MixProject do
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
       {:tailwind, "~> 0.1", runtime: Mix.env() == :dev},
+      {:finch, "~> 0.11.0"},
+      {:fast_rss, "~> 0.4"}
     ]
   end
 
