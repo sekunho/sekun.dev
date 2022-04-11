@@ -20,7 +20,7 @@ Repo.insert(%Entry{
   github_repo: "emojied",
   icon: "",
   media: "/images/projects/emojied.webp",
-  website_url: nil,
+  website_url: "https://emojied.net",
   learnings_url: nil,
   featured?: true,
   tags: ["rust", "axum", "tokio", "typescript", "esbuild", "tailwindcss"]
