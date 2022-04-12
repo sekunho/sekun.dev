@@ -23,7 +23,7 @@ Repo.insert(%Entry{
   website_url: "https://emojied.net",
   learnings_url: "https://blog.sekun.dev/posts/what-i-learned-from-building-a-rust-emoji-url-shortener",
   featured?: true,
-  tags: ["rust", "axum", "tokio", "typescript", "esbuild", "tailwindcss"]
+  tags: ["rust",  "nix", "axum", "tokio", "typescript", "esbuild", "tailwindcss", "docker"]
 })
 
 Repo.insert!(%Entry{
