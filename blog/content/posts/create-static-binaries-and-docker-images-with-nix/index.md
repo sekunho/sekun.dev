@@ -12,7 +12,7 @@ disableShare: false
 hideSummary: false
 cover:
     image: "posts/p3/cover.png"
-    alt: "An image of a URL containing emojis"
+    alt: "Nix logo with 2 arrows, each pointing to the Rust logo, and Docker."
     caption: "After many, many annoyances from Docker, I had to rethink using it."
     relative: false
 ---
@@ -100,11 +100,13 @@ This is the starting flake file:
 }
 ```
 
-1. `nixpkgs` [^1] is like a package repository. This is where you get `rustc`,
-`cargo`, etc. for example.
-2. `flake-utils` [^2] just makes dealing with flakes a bit more convenient,
-especially with multiple OSes (only doing Linux for now).
-3. `naersk` [^3] makes it easier to build static Rust binaries.
+1. [`nixpkgs`](https://nixos.wiki/wiki/Nixpkgs) is like a package repository.
+This is where you get `rustc`, `cargo`, etc. for example.
+2. [`flake-utils`](https://github.com/numtide/flake-utils) just makes dealing
+with flakes a bit more convenient, especially with multiple OSes (only doing
+Linux for now).
+3. [`naersk`](https://github.com/nix-community/naersk) makes it easier to build
+static Rust binaries.
 
 These are all _inputs_, where everything in the `outputs` field is sourced
 from. `outputs` is where everything gets packaged. Another thing is, to help
@@ -152,7 +154,7 @@ If you peek into `flake.lock`, you'll find something like this:
 There are more stuff in it, but hopefully this will make things a bit clearer.
 
 That's the best ELI5 I can think of, so I recommend you check out the
-documentation [^4] for a more technical explanation.
+[documentation](https://nixos.wiki/wiki/Flakes) for a more technical explanation.
 
 So, I run `nix build` and...
 
@@ -225,13 +227,15 @@ For more information about an error, try `rustc --explain E0425`.
 ```
 
 It's telling me that `cargo` can't resolve the `escape` module for `maud_macros`.
-I take a look at the source [^5], and it turns out it's a submodule:
+I took a look at the [source](https://github.com/lambda-fairy/maud/tree/main/maud_macros/src),
+and initially seemed like it's a submodule:
 
 ![A list of directories with the `escape.rs` file being a submodule](/posts/p3/maud-dir.png)
 
-Turns out there's a ticket [^6] pointing out that submodules isn't supported by
-`naersk`. Fortunately, by the time I read this, there was a PR ready that fixed
-this. All it required was adding `gitSubmodules = true;`:
+Turns out there's a ticket ([#110](https://github.com/nix-community/naersk/issues/110))
+pointing out that submodules isn't supported by `naersk`. Fortunately, by the
+time I read this, there was a PR ready that fixed this. All it required was
+adding `gitSubmodules = true;`:
 
 ```nix
 packages.emojied = naersk-lib.buildPackage {
@@ -247,10 +251,12 @@ Wrong.
 
 # Problem 2: Symlink woes
 
-It turns out that `escape.rs` is a symlink. `cargo` handles it just fine so
-running `cargo build` will work out. But this isn't the case for `naersk`. I
-couldn't find any issue talking about symlinks so I opened one [^7]. Unfortunately,
-I had no idea how to fix it, so I just decided to manually clone it, and remove
+Remember how I said it was a submodule? Well, it turns out that `escape.rs` is
+actually a symlink (the icons look too similar!). `cargo` handles it just fine
+so running `cargo build` will work out. But this isn't the case for `naersk`. I
+couldn't find any issue talking about symlinks so I opened one
+([#230](https://github.com/nix-community/naersk/issues/230)). Unfortunately, I
+had no idea how to fix it, so I just decided to manually clone it, and remove
 the symlink for a copy instead. It's only one file, so it isn't that big of a
 deal.
 
@@ -295,7 +301,6 @@ Well, I found out about `overrideAttrs` and it is wonderful.
           emojied = (naersk-lib.buildPackage {
             pname = "emojied";
             root = ./.;
-            gitSubmodules = true;
             nativeBuildInputs = with pkgs; [ ];
             buildInputs = with pkgs; [ openssl pkg-config ];
           }).overrideAttrs (old: {
@@ -340,9 +345,10 @@ Well, I found out about `overrideAttrs` and it is wonderful.
 }
 ```
 
-Since `buildPackage` just spits out an attribute set, I can override it to add
-more things. Here, I added new native build inputs (build time), new steps to
-`buildPhase`, and `installPhase` for the static assets.
+I removed `gitSubmodules = true` since it wasn't necessary anymore. `buildPackage`
+just spits out an attribute set, I can override it to add more things. Here, I
+added new native build inputs (build time), new steps to `buildPhase`, and
+`installPhase` for the static assets.
 
 And I ran it like this:
 
@@ -408,7 +414,7 @@ PG__DBNAME="emojied_db" \
 PG__HOST="localhost" \
 PG__USER="sekun" \
 PG__PORT="5432" \
-APP_STATIC_ASSETS="/foo/bar/public/" \
+APP__STATIC_ASSETS="/foo/bar/public/" \
   ./emojied
 ```
 
@@ -486,7 +492,8 @@ endpoint for static assets. Now, I feel the pain of my laziness.
 
 Okay, but then I still need a way to set the environment variable automatically,
 right? Currently, it's not very convenient to do it every time it's called with
-`nix run`. Turns out `makeWrapper` [^8] exists. (Thanks K900!)
+`nix run`. Turns out [`makeWrapper`](https://nixos.wiki/wiki/Nix_Cookbook) exists.
+(Thanks K900!)
 
 ```nix
 {
@@ -563,7 +570,8 @@ image for me.
 
 _Wait, did you say Nix could build Docker images?_
 
-Oh yeah, big time; `nix.dev` has a great starting point [^9] for doing so.
+Oh yeah, big time; [`nix.dev`](https://nix.dev/tutorials/building-and-running-docker-images)
+has a great starting point [^9] for doing so.
 
 Here's what I ended up with:
 
@@ -577,7 +585,7 @@ packages.emojied-docker = pkgs.dockerTools.buildImage {
   name = "emojied-docker";
   tag = "latest";
 
-  contents = [ pkgs.coreutils packages.emojied pkgs.bash ];
+  contents = [ pkgs.bash ];
 
   config = {
     WorkingDir = "/app";
@@ -597,9 +605,8 @@ packages.emojied-docker = pkgs.dockerTools.buildImage {
 If you squint hard enough, the contents of `config` just looks like a Nix version
 of a `Dockerfile`, which it is! The other cool part is now the package versions
 are in sync no matter what environment it is in. `contents` allows me to throw
-in Nix packages to the image, including the package I made. Since it seemed like
-the `PATH`s aren't set automatically, I had to specify it in `Env` for `coreutils`,
-and `emojied`.
+in Nix packages to the image. Since it seemed like the `PATH`s aren't set automatically,
+I had to specify it in `Env` for `coreutils`, and `emojied`.
 
 It's basically like the other packages created, like `emojied`, and
 `emojied-unwrapped`. Which means I can build it in the exact same way as them:
@@ -685,13 +692,3 @@ environments, and the deploy process, setting up is pretty complicated. I had
 to look through different references and the Nix matrix channel just to find a
 description of an attribute. Things aren't as well-documented but there's a lot
 of community effort to make this less painful.
-
-[^1]: https://nixos.wiki/wiki/Nixpkgs
-[^2]: https://github.com/numtide/flake-utils
-[^3]: https://github.com/nix-community/naersk
-[^4]: https://nixos.wiki/wiki/Flakes
-[^5]: https://github.com/lambda-fairy/maud/tree/main/maud_macros/src
-[^6]: https://github.com/nix-community/naersk/issues/110
-[^7]: https://github.com/nix-community/naersk/issues/230
-[^8]: https://nixos.wiki/wiki/Nix_Cookbook
-[^9]: https://nix.dev/tutorials/building-and-running-docker-images
