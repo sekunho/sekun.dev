@@ -1,6 +1,6 @@
 ---
 title: "Create static Rust binaries, and Docker images with Nix"
-date: 2021-04-11T06:20:00+00:00
+date: 2022-04-11T06:20:00+00:00
 tags: ["nix", "emojied", "docker", "rust", "github actions"]
 author: "sekun"
 showToc: true

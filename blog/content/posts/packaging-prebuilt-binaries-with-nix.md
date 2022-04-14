@@ -1,6 +1,6 @@
 ---
 title: "Packaging Pre-built Binaries with Nix Flake"
-date: 2021-03-06T04:11:00+00:00
+date: 2022-03-06T04:11:00+00:00
 tags: ["nix", "postgrest"]
 author: "sekun"
 showToc: true

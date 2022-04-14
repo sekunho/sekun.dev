@@ -1,6 +1,6 @@
 ---
 title: "What I learned from building an emoji URL shortener in Rust"
-date: 2021-04-11T06:20:00+00:00
+date: 2022-04-11T06:20:00+00:00
 tags: ["nix", "postgresql", "rust", "axum"]
 author: "sekun"
 showToc: true
