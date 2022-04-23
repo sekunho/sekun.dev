@@ -1,0 +1,708 @@
+<!doctype html><html lang=en dir=auto>
+<head><meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<meta name=viewport content="width=device-width,initial-scale=1,shrink-to-fit=no">
+<meta name=robots content="index, follow">
+<title>Create Rust binaries, and Docker images with Nix | sekun's blog</title>
+<meta name=keywords content="nix,emojied,docker,rust,github actions">
+<meta name=description content="Introduction A few days ago, I released the abomination of a project called emojied (website, repo) to the world. It went great, I&rsquo;m glad people found it funny. However, I&rsquo;m not too pleased with the deployment process: from building the project to shipping it. I made heavy use of Docker to build the necessary static assets, and binary.
+Here&rsquo;s the current setup:
+ Dev environment  PostgreSQL (handled by NixOS) rustc, openssl, cargo, etc.">
+<meta name=author content="sekun">
+<link rel=canonical href=https://blog.sekun.dev/posts/create-rust-binaries-and-docker-images-with-nix/>
+<link rel=preconnect href=https://fonts.googleapis.com>
+<link rel=preconnect href=https://fonts.gstatic.com crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Vollkorn:wght@400;500;600;700&display=swap" rel=stylesheet>
+<link crossorigin=anonymous href=/assets/css/stylesheet.min.c5fdf02d9fbdbf20a5d2f0688981e299eed4e35afd7c8b5989b9d6c8f9944a14.css integrity="sha256-xf3wLZ+9vyCl0vBoiYHime7U41r9fItZibnWyPmUShQ=" rel="preload stylesheet" as=style>
+<script defer crossorigin=anonymous src=/assets/js/highlight.min.7680afc38aa6b15ddf158a4f3780b7b1f7dde7e91d26f073e6229bb7a0793c92.js integrity="sha256-doCvw4qmsV3fFYpPN4C3sffd5+kdJvBz5iKbt6B5PJI=" onload=hljs.initHighlightingOnLoad()></script>
+<link rel=icon href=https://blog.sekun.dev/favicon.ico>
+<link rel=icon type=image/png sizes=16x16 href=https://blog.sekun.dev/favicon-16x16.png>
+<link rel=icon type=image/png sizes=32x32 href=https://blog.sekun.dev/favicon-32x32.png>
+<link rel=apple-touch-icon href=https://blog.sekun.dev/apple-touch-icon.png>
+<link rel=mask-icon href=https://blog.sekun.dev/safari-pinned-tab.svg>
+<meta name=theme-color content="#2e2e33">
+<meta name=msapplication-TileColor content="#2e2e33">
+<noscript>
+<style>#theme-toggle,.top-link{display:none}</style>
+<style>@media(prefers-color-scheme:dark){:root{--theme:rgb(29, 30, 32);--entry:rgb(46, 46, 51);--primary:rgb(218, 218, 219);--secondary:rgb(155, 156, 157);--tertiary:rgb(65, 66, 68);--content:rgb(196, 196, 197);--hljs-bg:rgb(46, 46, 51);--code-bg:rgb(55, 56, 62);--border:rgb(51, 51, 51)}.list{background:var(--theme)}.list:not(.dark)::-webkit-scrollbar-track{background:0 0}.list:not(.dark)::-webkit-scrollbar-thumb{border-color:var(--theme)}}</style>
+</noscript><meta property="og:title" content="Create Rust binaries, and Docker images with Nix">
+<meta property="og:description" content="Introduction A few days ago, I released the abomination of a project called emojied (website, repo) to the world. It went great, I&rsquo;m glad people found it funny. However, I&rsquo;m not too pleased with the deployment process: from building the project to shipping it. I made heavy use of Docker to build the necessary static assets, and binary.
+Here&rsquo;s the current setup:
+ Dev environment  PostgreSQL (handled by NixOS) rustc, openssl, cargo, etc.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://blog.sekun.dev/posts/create-rust-binaries-and-docker-images-with-nix/">
+<meta property="og:image" content="https://blog.sekun.dev/posts/p3/cover.png"><meta property="article:section" content="posts">
+<meta property="article:published_time" content="2022-04-11T06:20:00+00:00">
+<meta property="article:modified_time" content="2022-04-11T06:20:00+00:00">
+<meta name=twitter:card content="summary_large_image">
+<meta name=twitter:image content="https://blog.sekun.dev/posts/p3/cover.png">
+<meta name=twitter:title content="Create Rust binaries, and Docker images with Nix">
+<meta name=twitter:description content="Introduction A few days ago, I released the abomination of a project called emojied (website, repo) to the world. It went great, I&rsquo;m glad people found it funny. However, I&rsquo;m not too pleased with the deployment process: from building the project to shipping it. I made heavy use of Docker to build the necessary static assets, and binary.
+Here&rsquo;s the current setup:
+ Dev environment  PostgreSQL (handled by NixOS) rustc, openssl, cargo, etc.">
+<script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":2,"name":"Posts","item":"https://blog.sekun.dev/posts/"},{"@type":"ListItem","position":3,"name":"Create Rust binaries, and Docker images with Nix","item":"https://blog.sekun.dev/posts/create-rust-binaries-and-docker-images-with-nix/"}]}</script>
+<script type=application/ld+json>{"@context":"https://schema.org","@type":"BlogPosting","headline":"Create Rust binaries, and Docker images with Nix","name":"Create Rust binaries, and Docker images with Nix","description":"Introduction A few days ago, I released the abomination of a project called emojied (website, repo) to the world. It went great, I\u0026rsquo;m glad people found it funny. However, I\u0026rsquo;m not too pleased with the deployment process: from building the project to shipping it. I made heavy use of Docker to build the necessary static assets, and binary.\nHere\u0026rsquo;s the current setup:\n Dev environment  PostgreSQL (handled by NixOS) rustc, openssl, cargo, etc.","keywords":["nix","emojied","docker","rust","github actions"],"articleBody":"Introduction A few days ago, I released the abomination of a project called emojied (website, repo) to the world. It went great, I’m glad people found it funny. However, I’m not too pleased with the deployment process: from building the project to shipping it. I made heavy use of Docker to build the necessary static assets, and binary.\nHere’s the current setup:\n Dev environment  PostgreSQL (handled by NixOS) rustc, openssl, cargo, etc. (handled by Nix)   CI/CD (GitHub Actions)  Build static assets (just in GitHub Actions) Build static binary (Docker, ekidd/rust-musl-builder) Build prod image (Docker, alpine)    I’ve already tried to remove as much responsibility from #3 by building the static assets, and binary beforehand; I really need to do is copy it over. #2 is where the pain is because it does not reuse the dependencies from #1. So, I have two options here:\n Use Docker for everything, but this complicates my dev environment cause now I have to deal with containers; or I use Nix for everything, including constructing the prod image.  I dislike the idea of using containers if all you want is reproducibility because it seems like an overkill. It’s annoying to setup volumes, annoying to manage permissions, annoying to wait for it to pull an entire image. On the other hand, while Nix is pretty difficult, it seems like a saner approach for what I want to do, so I chose it.\nSo, here’s how it went. (Spoiler: Kinda painful to setup)\nStarting point This is the starting flake file:\n{ description = \"\"; inputs = { # 1 nixpkgs.url = \"github:NixOS/nixpkgs\"; # Like `nixpkgs` but more bleeding-edge nixos-unstable.url = \"github:NixOS/nixpkgs/nixos-unstable\"; # 2 flake-utils.url = \"github:numtide/flake-utils\"; # 3 naersk.url = \"github:nix-community/naersk\"; }; outputs = { self, nixpkgs, nixos-unstable, flake-utils, naersk }: flake-utils.lib.eachSystem [ \"x86_64-linux\" ] (system: let pkgs = nixpkgs.legacyPackages.${system}; naersk-lib = naersk.lib.\"${system}\".override { cargo = pkgs.cargo; rustc = pkgs.rustc; }; in rec { # Build binary packages.emojied = naersk-lib.buildPackage { pname = \"emojied\"; root = ./.; }; # The package that gets built when I run `nix build` defaultPackage = packages.emojied; apps.emojied = flake-utils.lib.mkApp { drv = packages.emojied; }; }); }  nixpkgs is like a package repository. This is where you get rustc, cargo, etc. for example. flake-utils just makes dealing with flakes a bit more convenient, especially with multiple OSes (only doing Linux for now). naersk makes it easier to build static Rust binaries.  These are all inputs, where everything in the outputs field is sourced from. outputs is where everything gets packaged. Another thing is, to help with reproducibility, it pins these inputs to a specific GitHub commit via a lock file. So no version numbers, but down to the commit. This is how projects can be built in the future in the exact same way as now.\nIf you peek into flake.lock, you’ll find something like this:\n\"naersk\": { \"inputs\": { \"nixpkgs\": \"nixpkgs\" }, \"locked\": { \"lastModified\": 1649096192, \"narHash\": \"sha256-7O8e+eZEYeU+ET98u/zW5epuoN/xYx9G+CIh4DjZVzY=\", \"owner\": \"nix-community\", \"repo\": \"naersk\", \"rev\": \"d626f73332a8f587b613b0afe7293dd0777be07d\", \"type\": \"github\" }, \"original\": { \"owner\": \"nix-community\", \"repo\": \"naersk\", \"type\": \"github\" } }, \"nixpkgs\": { \"locked\": { \"lastModified\": 1648219316, \"narHash\": \"sha256-Ctij+dOi0ZZIfX5eMhgwugfvB+WZSrvVNAyAuANOsnQ=\", \"owner\": \"NixOS\", \"repo\": \"nixpkgs\", \"rev\": \"30d3d79b7d3607d56546dd2a6b49e156ba0ec634\", \"type\": \"github\" }, \"original\": { \"id\": \"nixpkgs\", \"type\": \"indirect\" } } There are more stuff in it, but hopefully this will make things a bit clearer.\nThat’s the best ELI5 I can think of, so I recommend you check out the documentation for a more technical explanation.\nSo, I run nix build and…\nProblem 0: OpenSSL Bam.\nerror: builder for '/nix/store/pv9szkam1rawk40ywp3v89k53zg4b1l4-emojied-deps-0.1.0.drv' failed with exit code 101; last 10 log lines:  It looks like you're compiling on Linux and also targeting Linux. Currently this  requires the `pkg-config` utility to find OpenSSL but unfortunately `pkg-config`  could not be found. If you have OpenSSL installed you can likely fix this by  installing `pkg-config`.   ', /sources/openssl-sys-0.9.72/build/find_normal.rs:180:5  note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace  warning: build failed, waiting for other jobs to finish...  error: build failed  [naersk] cargo returned with exit code 101, exiting For full logs, run 'nix log /nix/store/pv9szkam1rawk40ywp3v89k53zg4b1l4-emojied-deps-0.1.0.drv'. error: 1 dependencies of derivation '/nix/store/r0h49v7i2vg5dckb9h2g8p7na048rk4g-emojied-0.1.0.drv' failed to build I’ve seen this error before! Since emojied uses native-tls, and since it’s just a wrapper around OpenSSL, I need to have OpenSSL around. Thankfully, naersk has a buildInputs attribute for us to use.\npackages.emojied = naersk-lib.buildPackage { pname = \"emojied\"; root = ./.; buildInputs = with pkgs; [ openssl pkg-config ]; }; Ran nix build, and I’m greeted with another problem!\nProblem 1: git submodule woes Compiling maud_macros v0.23.0 (https://github.com/lambda-fairy/maud?branch=main#e6787cd6) error: could not compile `maud_macros` due to 3 previous errors warning: build failed, waiting for other jobs to finish... error: build failed error[E0583]: file not found for module `escape` -- /sources/maud_macros-0.23.0-e6787cd62165a075c7f16a32f8bbacc398f52d13/src/lib.rs:9:1 | 9 | mod escape; | ^^^^^^^^^^^ | = help: to create the module `escape`, create file \"/nix/store/shixfmbv64zzi9i0rzb9c8870ydm7cf2-crates-io/maud_macr error[E0425]: cannot find function `escape_to_string` in module `escape` -- /sources/maud_macros-0.23.0-e6787cd62165a075c7f16a32f8bbacc398f52d13/src/generate.rs:272:17 | 272 | escape::escape_to_string(string, \u0026mut self.tail); | ^^^^^^^^^^^^^^^^ not found in `escape` error: aborting due to 2 previous errors Some errors have detailed explanations: E0425, E0583. For more information about an error, try `rustc --explain E0425`. [naersk] cargo returned with exit code 101, exiting It’s telling me that cargo can’t resolve the escape module for maud_macros. I took a look at the source, and initially seemed like it’s a submodule:\nescape.rs file being a submodule\" / Turns out there’s a ticket (#110) pointing out that submodules isn’t supported by naersk. Fortunately, by the time I read this, there was a PR ready that fixed this. All it required was adding gitSubmodules = true;:\npackages.emojied = naersk-lib.buildPackage { pname = \"emojied\"; root = ./.; gitSubmodules = true; }; So this fixes everything then, right?\nWrong.\nProblem 2: Symlink woes Remember how I said it was a submodule? Well, it turns out that escape.rs is actually a symlink (the icons look too similar!). cargo handles it just fine so running cargo build will work out. But this isn’t the case for naersk. I couldn’t find any issue talking about symlinks so I opened one (#230). Unfortunately, I had no idea how to fix it, so I just decided to manually clone it, and remove the symlink for a copy instead. It’s only one file, so it isn’t that big of a deal.\nKind of a hack, but it works now! A binary is available in ./result/bin/, albeit a symlink. I ran it with:\nPG__DBNAME=\"emojied_db\" PG__HOST=\"localhost\" PG__USER=\"sekun\" PG__PORT=\"5432\" \\  ./result/bin/emojied …and I was greeted with this unstyled page:\nProblem 3: Static assets emojied is comprised of two things: a server binary, and static assets. These static assets are built using tailwindcss’s CLI, and esbuild… which was not handled by naersk. It does not seem to provide an escape hatch, which makes sense anyway cause it would be kinda weird to do things unrelated to Rust in a Rust builder.\nNow what?\nWell, I found out about overrideAttrs and it is wonderful.\n{ # ... outputs = { self, nixpkgs, nixos-unstable, flake-utils, naersk }: flake-utils.lib.eachSystem [ \"x86_64-linux\" ] (system: let pkgs = nixpkgs.legacyPackages.${system}; unstablepkgs = nixos-unstable.legacyPackages.${system}; naersk-lib = naersk.lib.\"${system}\".override { cargo = pkgs.cargo; rustc = pkgs.rustc; }; # I moved it up here so I could bind it to `emojied`. emojied = (naersk-lib.buildPackage { pname = \"emojied\"; root = ./.; nativeBuildInputs = with pkgs; [ ]; buildInputs = with pkgs; [ openssl pkg-config ]; }).overrideAttrs (old: { # I get access to `old` which has the previous attributes. # And I get to override anything! nativeBuildInputs = old.nativeBuildInputs ++ [ unstablepkgs.nodePackages.typescript unstablepkgs.nodePackages.tailwindcss unstablepkgs.esbuild ]; buildInputs = old.buildInputs; buildPhase = old.buildPhase + '' tailwindcss \\ --input assets/app.css \\ --config assets/tailwind.config.js \\ --output public/app.css \\ --minify esbuild \\ assets/app.ts \\ --outdir=public/ \\ --minify ''; installPhase = old.installPhase + '' mv public $out/bin mv bin/run $out/bin/run ''; }); in rec { packages.emojied = emojied; defaultPackage = packages.emojied; apps.emojied = flake-utils.lib.mkApp { drv = packages.emojied; }; }); } I removed gitSubmodules = true since it wasn’t necessary anymore. buildPackage just spits out an attribute set, I can override it to add more things. Here, I added new native build inputs (build time), new steps to buildPhase, and installPhase for the static assets.\nAnd I ran it like this:\ncd result/bin PG__DBNAME=\"emojied_db\" PG__HOST=\"localhost\" PG__USER=\"sekun\" PG__PORT=\"5432\" \\  ./emojied Beautiful.\nOkay, so that seems to work but I have to run emojied in the same directory as public/ cause otherwise it won’t find anything. Which is expected because:\npub async fn stylesheet() - (StatusCode, HeaderMap, String) { let mut headers = HeaderMap::new(); match fs::read_to_string(\"public/app.css\") { // ^ Relative path. Good job me!  Ok(content) = { headers.insert( HeaderName::from_static(\"content-type\"), HeaderValue::from_static(\"text/css; charset=utf-8\"), ); (StatusCode::OK, headers, content) } Err(_e) = (StatusCode::NOT_FOUND, headers, String::from(\"Not found\")), } } I’m using relative paths! But other than that, it works. It’s not exactly an issue for the way I’m using it, which is:\n Build the binary Build static assets Copy files from #1 and #2, and throw it into an image.  But with nix run, it gives me broken styles again. I don’t want it to depend on where I run it! So. Close.\nProblem 4: Making it work™ So the problem is that the file paths are relative which makes it depend on where I run the binary. The plan then is to provide the static asset directory path during runtime!\nThis way it’s flexible enough to:\n Ship off to a Docker image; and Use nix run without breaking anything.  Something like this would be nice:\nPG__DBNAME=\"emojied_db\" \\ PG__HOST=\"localhost\" \\ PG__USER=\"sekun\" \\ PG__PORT=\"5432\" \\ APP__STATIC_ASSETS=\"/foo/bar/public/\" \\ ./emojied I added another field to AppConfig, and checked if there’s an argument called static_assets_path:\n// src/config.rs  struct AppConfig { // ...  pub static_assets_path: String // See disclaimer below } Loaded it from the environment:\n// src/config.rs  let static_assets_path = env::var(\"APP__STATIC_ASSETS\") .map_err(|_| Error::MissingStaticAssetsPath)?; // ...  Ok(AppConfig { // ...  static_assets_path, // New! }) Add AppConfig to the middleware:\n// ... let config = Arc::new(config); let app = Router::new() // ...  .layer(Extension(config)); And in the functions serving the files:\npub async fn js( Extension(config): ExtensionArcAppConfig // New ) - (StatusCode, HeaderMap, String) { let mut headers = HeaderMap::new(); let mut static_assets_path = config.static_assets_path.clone(); // New  static_assets_path.push_str(\"public/app.js\"); // New  // Shiny, new path  match fs::read_to_string(static_assets_path) { Ok(content) = { headers.insert( HeaderName::from_static(\"content-type\"), HeaderValue::from_static(\"application/javascript; charset=utf-8\"), ); (StatusCode::OK, headers, content) } Err(_e) = (StatusCode::NOT_FOUND, headers, String::from(\"Not found\")), } } …which I then repeated in 2 more functions because I was too lazy to make one endpoint for static assets. Now, I feel the pain of my laziness.\n Disclaimer: Before you come after me with pitchforks, I later did a tiny refactor which uses PathBuf rather than a String.\n Okay, but then I still need a way to set the environment variable automatically, right? Currently, it’s not very convenient to do it every time it’s called with nix run. Turns out makeWrapper exists. (Thanks K900!)\n{ # ... packages.emojied-unwrapped = emojied; # New packages.emojied = pkgs.symlinkJoin { name = \"emojied\"; paths = [ emojied ]; buildInputs = [ pkgs.makeWrapper ]; postBuild = '' wrapProgram $out/bin/emojied \\ --set APP__STATIC_ASSETS \"${emojied}/bin/public\" # ^ What a convenient way to get the path ''; }; # ... } So I’ll get the “wrapped” version of emojied with nix build, which has the static assets path already applied. Doing so gets me this:\nsekun@nixos ~/P/emojiurl (chore/nixify-package) nix build sekun@nixos ~/P/emojiurl (chore/nixify-package) ls -la result/bin total 20 dr-xr-xr-x 3 root root 4096 Jan 1 1970 . dr-xr-xr-x 3 root root 4096 Jan 1 1970 .. -r-xr-xr-x 1 root root 264 Jan 1 1970 emojied lrwxrwxrwx 1 root root 69 Jan 1 1970 .emojied-wrapped - /nix/store/7nh13gwhhlmfmmb6qss47axj7nd99jw7-emojied-0.1.0/bin/emojied dr-xr-xr-x 2 root root 4096 Jan 1 1970 public sekun@nixos ~/P/emojiurl (chore/nixify-package) ls -la # ... lrwxrwxrwx 1 sekun users 51 Apr 12 22:55 result - /nix/store/300n6rjxm88asmqhv99hid9mi8148xjs-emojied #... So, it symlinked .emojied-wrapped to the original emojied, and result is symlinked to a wrapped version of it. Is this another derivation? Seems like it, although I don’t really know since I’m not so familiar with this. I’ll have to do more reading. I’m just gonna manually test it to verify if it all works. .#emojied-unwrapped needs to complain about the missing assets path if I don’t provide one, and .#emojied shouldn’t.\nsekun@nixos ~/P/emojiurl (chore/nixify-package) PG__DBNAME=\"emojied_db\" PG__HOST=\"localhost\" PG__USER=\"sekun\" PG__PORT=\"5432\" nix run .#emojied-unwrapped Loading configuration from environment Application config error: Missing environment variable: `APP__STATIC_ASSETS=` sekun@nixos ~/P/emojiurl (chore/nixify-package) [1] PG__DBNAME=\"emojied_db\" PG__HOST=\"localhost\" PG__USER=\"sekun\" PG__PORT=\"5432\" nix run Loading configuration from environment Attempting to establish a database connection Database connection established …and it works as expected. The second one also serves the static assets just fine! Hooray.\nProblem 5: Copy all that to a Docker image The final step is copying what was built by Nix to a Docker image. I’m currently using a Dockerfile for that but this won’t work with this new setup. The problem now is that Docker doesn’t resolve symlinks that point outside the context, which is problematic since result is a symlink that points to some place in /nix/store! I could do some dirty hacks, but I could also just use Nix to build a Docker image for me.\nWait, did you say Nix could build Docker images?\nOh yeah, big time; nix.dev has a great starting point [^9] for doing so.\nHere’s what I ended up with:\n# flake.nix # ... # In `outputs` packages.emojied-docker = pkgs.dockerTools.buildImage { name = \"emojied-docker\"; tag = \"latest\"; contents = [ pkgs.bash ]; config = { WorkingDir = \"/app\"; Env = [ \"PATH=${pkgs.coreutils}/bin/:${packages.emojied}/bin\" ]; ExposedPorts = { \"3000/tcp\" = {}; }; # bin/run is a script that handles the dumping of CA certs, and runs the # emojied server. Cmd = [ \"${packages.emojied}/bin/run\" ]; }; }; If you squint hard enough, the contents of config just looks like a Nix version of a Dockerfile, which it is! The other cool part is now the package versions are in sync no matter what environment it is in. contents allows me to throw in Nix packages to the image. Since it seemed like the PATHs aren’t set automatically, I had to specify it in Env for coreutils, and emojied.\nIt’s basically like the other packages created, like emojied, and emojied-unwrapped. Which means I can build it in the exact same way as them:\n# Don't mind the branch change. I ran this in the morning. sekun@nixos ~/P/emojiurl (main) nix build .#emojied-docker # some build-related output sekun@nixos ~/P/emojiurl (main) ls -la # ... lrwxrwxrwx 1 sekun users 78 Apr 13 12:28 result - /nix/store/vmrja5imhrfhvl082j5qkqahcfj85adk-docker-image-emojied-docker.tar.gz # ... Instead, result is a symlink to some image tar file which you can load with docker load .\nsekun@nixos ~/P/emojiurl (main) docker load (main) docker images # ... emojied-docker latest 1a9092013b19 52 years ago 50MB Sweet!\nAll that’s left is to update the CI for these new steps, which is on the simpler side of things now:\nname: CI/CD on: push: branches: - main jobs: deploy: name: Build release and deploy runs-on: ubuntu-20.04 steps: - name: Checkout repo uses: actions/checkout@v2 - name: Setup Nix uses: cachix/install-nix-action@v15 - name: Login to Docker Hub uses: docker/login-action@v1 with: username: ${{ secrets.DOCKER_HUB_USERNAME }} password: ${{ secrets.DOCKER_HUB_PASSWORD }} - name: Build image run: |nix build .#emojied-docker docker load - name: Rename image run: docker tag emojied-docker:latest hsekun/emojied:latest - name: Push image run: docker push hsekun/emojied:latest It’s just so much easier, and I have more confidence that the CI will work as intended now that Nix is handling the important parts, which I can do locally. Not to say that Docker can’t do the same thing, but I found that there were some differences with volumes that made it painful to debug.\nConclusion While it did simplify things such as dependency management across different environments, and the deploy process, setting up is pretty complicated. I had to look through different references and the Nix matrix channel just to find a description of an attribute. Things aren’t as well-documented but there’s a lot of community effort to make this less painful.\nEdit (April 24, 2022): Turns out that it actually isn’t a static binary, and I’ve modified the post accordingly. The upside is building the Docker image via Nix with emojied in it means it’s somewhat irrelevant to require it to be a static binary to begin with. But it does mean I can’t easily distribute it outside nix, which is a bummer. Maybe I’ll hunt for a workaround in the future. Right now, I’m not too keen into sinking a lot of time into something I won’t benefit from.\n","wordCount":"2743","inLanguage":"en","image":"https://blog.sekun.dev/posts/p3/cover.png","datePublished":"2022-04-11T06:20:00Z","dateModified":"2022-04-11T06:20:00Z","author":{"@type":"Person","name":"sekun"},"mainEntityOfPage":{"@type":"WebPage","@id":"https://blog.sekun.dev/posts/create-rust-binaries-and-docker-images-with-nix/"},"publisher":{"@type":"Organization","name":"sekun's blog","logo":{"@type":"ImageObject","url":"https://blog.sekun.dev/favicon.ico"}}}</script>
+</head>
+<body id=top>
+<script>localStorage.getItem("pref-theme")==="dark"?document.body.classList.add('dark'):localStorage.getItem("pref-theme")==="light"?document.body.classList.remove('dark'):window.matchMedia('(prefers-color-scheme: dark)').matches&&document.body.classList.add('dark')</script>
+<header class=header>
+<nav class=nav>
+<div class=logo>
+<a href=https://blog.sekun.dev accesskey=h title="sekun's blog (Alt + H)">sekun's blog</a>
+<span class=logo-switches>
+<button id=theme-toggle accesskey=t title="(Alt + T)"><svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg><svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+</span>
+</div>
+<ul id=menu>
+<li>
+<a href=https://blog.sekun.dev/posts/ title=posts>
+<span>posts</span>
+</a>
+</li>
+<li>
+<a href=https://blog.sekun.dev/tags/ title=tags>
+<span>tags</span>
+</a>
+</li>
+<li>
+<a href=https://blog.sekun.dev/archive/ title="search (Alt + /)" accesskey=/>
+<span>search</span>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<main class=main>
+<article class=post-single>
+<header class=post-header>
+<h1 class=post-title>
+Create Rust binaries, and Docker images with Nix
+</h1>
+<div class=post-meta><span title="2022-04-11 06:20:00 +0000 UTC">April 11, 2022</span>&nbsp;·&nbsp;13 min&nbsp;·&nbsp;sekun&nbsp;|&nbsp;<a href=https://github.com/sekunho/sekun.dev/tree/main/blog/content/posts/create-rust-binaries-and-docker-images-with-nix/index.md rel="noopener noreferrer" target=_blank>Suggest Changes</a>
+</div>
+</header>
+<figure class=entry-cover><img loading=lazy src=https://blog.sekun.dev/posts/p3/cover.png alt="Nix logo with 2 arrows, each pointing to the Rust logo, and Docker.">
+<p>After many, many annoyances from Docker, I had to rethink using it.</p>
+</figure><div class=toc>
+<details open>
+<summary accesskey=c title="(Alt + C)">
+<span class=details>Table of Contents</span>
+</summary>
+<div class=inner><ul>
+<li>
+<a href=#introduction aria-label=Introduction>Introduction</a></li>
+<li>
+<a href=#starting-point aria-label="Starting point">Starting point</a></li>
+<li>
+<a href=#problem-0-openssl aria-label="Problem 0: OpenSSL">Problem 0: OpenSSL</a></li>
+<li>
+<a href=#problem-1-git-submodule-woes aria-label="Problem 1: git submodule woes">Problem 1: <code>git</code> submodule woes</a></li>
+<li>
+<a href=#problem-2-symlink-woes aria-label="Problem 2: Symlink woes">Problem 2: Symlink woes</a></li>
+<li>
+<a href=#problem-3-static-assets aria-label="Problem 3: Static assets">Problem 3: Static assets</a></li>
+<li>
+<a href=#problem-4-making-it-work aria-label="Problem 4: Making it work™">Problem 4: Making it work™</a></li>
+<li>
+<a href=#problem-5-copy-all-that-to-a-docker-image aria-label="Problem 5: Copy all that to a Docker image">Problem 5: Copy all that to a Docker image</a></li>
+<li>
+<a href=#conclusion aria-label=Conclusion>Conclusion</a>
+</li>
+</ul>
+</div>
+</details>
+</div>
+<div class=post-content><h1 id=introduction>Introduction<a hidden class=anchor aria-hidden=true href=#introduction>#</a></h1>
+<p>A few days ago, I <a href=/posts/what-i-learned-from-building-a-rust-emoji-url-shortener>released</a>
+<del>the abomination of</del> a project called <code>emojied</code>
+(<a href=https://emojied.net>website</a>, <a href=https://github.com/sekunho/emojied>repo</a>) to
+the world. It went great, I&rsquo;m glad people found it funny. However, I&rsquo;m not too
+pleased with the deployment process: from building the project to shipping it.
+I made heavy use of Docker to build the necessary static assets, and binary.</p>
+<p>Here&rsquo;s the current setup:</p>
+<ul>
+<li>Dev environment
+<ul>
+<li>PostgreSQL (handled by NixOS)</li>
+<li><code>rustc</code>, <code>openssl</code>, <code>cargo</code>, etc. (handled by Nix)</li>
+</ul>
+</li>
+<li>CI/CD (GitHub Actions)
+<ol>
+<li>Build static assets (just in GitHub Actions)</li>
+<li>Build static binary (Docker, <code>ekidd/rust-musl-builder</code>)</li>
+<li>Build prod image (Docker, <code>alpine</code>)</li>
+</ol>
+</li>
+</ul>
+<p>I&rsquo;ve already tried to remove as much responsibility from #3 by building the
+static assets, and binary beforehand; I really need to do is copy it over.
+#2 is where the pain is because it does not reuse the dependencies from #1.
+So, I have two options here:</p>
+<ol>
+<li>Use Docker for everything, but this complicates my dev environment cause now
+I have to deal with containers; or</li>
+<li>I use Nix for everything, including constructing the prod image.</li>
+</ol>
+<p>I dislike the idea of using containers if all you want is reproducibility
+because it seems like an overkill. It&rsquo;s annoying to setup volumes, annoying to
+manage permissions, annoying to wait for it to pull an entire image. On the other
+hand, while Nix is pretty difficult, it seems like a saner approach for what I
+want to do, so I chose it.</p>
+<p>So, here&rsquo;s how it went. (Spoiler: Kinda painful to setup)</p>
+<h1 id=starting-point>Starting point<a hidden class=anchor aria-hidden=true href=#starting-point>#</a></h1>
+<p>This is the starting flake file:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-nix data-lang=nix>{
+  description <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;&#34;</span>;
+
+  inputs <span style=color:#f92672>=</span> {
+    <span style=color:#75715e># 1</span>
+    nixpkgs<span style=color:#f92672>.</span>url <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;github:NixOS/nixpkgs&#34;</span>;
+
+    <span style=color:#75715e># Like `nixpkgs` but more bleeding-edge</span>
+    nixos-unstable<span style=color:#f92672>.</span>url <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;github:NixOS/nixpkgs/nixos-unstable&#34;</span>;
+
+    <span style=color:#75715e># 2</span>
+    flake-utils<span style=color:#f92672>.</span>url <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;github:numtide/flake-utils&#34;</span>;
+
+    <span style=color:#75715e># 3</span>
+    naersk<span style=color:#f92672>.</span>url <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;github:nix-community/naersk&#34;</span>;
+  };
+
+  outputs <span style=color:#f92672>=</span> { self<span style=color:#f92672>,</span> nixpkgs<span style=color:#f92672>,</span> nixos-unstable<span style=color:#f92672>,</span> flake-utils<span style=color:#f92672>,</span> naersk }:
+    flake-utils<span style=color:#f92672>.</span>lib<span style=color:#f92672>.</span>eachSystem [ <span style=color:#e6db74>&#34;x86_64-linux&#34;</span> ] (system:
+      <span style=color:#66d9ef>let</span> pkgs <span style=color:#f92672>=</span> nixpkgs<span style=color:#f92672>.</span>legacyPackages<span style=color:#f92672>.</span><span style=color:#e6db74>${</span>system<span style=color:#e6db74>}</span>;
+           naersk-lib <span style=color:#f92672>=</span> naersk<span style=color:#f92672>.</span>lib<span style=color:#f92672>.</span><span style=color:#e6db74>&#34;</span><span style=color:#e6db74>${</span>system<span style=color:#e6db74>}</span><span style=color:#e6db74>&#34;</span><span style=color:#f92672>.</span>override {
+             cargo <span style=color:#f92672>=</span> pkgs<span style=color:#f92672>.</span>cargo;
+             rustc <span style=color:#f92672>=</span> pkgs<span style=color:#f92672>.</span>rustc;
+           };
+      <span style=color:#66d9ef>in</span> <span style=color:#66d9ef>rec</span> {
+        <span style=color:#75715e># Build binary</span>
+        packages<span style=color:#f92672>.</span>emojied <span style=color:#f92672>=</span> naersk-lib<span style=color:#f92672>.</span>buildPackage {
+          pname <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;emojied&#34;</span>;
+          root <span style=color:#f92672>=</span> <span style=color:#e6db74>./.</span>;
+        };
+
+        <span style=color:#75715e># The package that gets built when I run `nix build`</span>
+        defaultPackage <span style=color:#f92672>=</span> packages<span style=color:#f92672>.</span>emojied;
+
+        apps<span style=color:#f92672>.</span>emojied <span style=color:#f92672>=</span> flake-utils<span style=color:#f92672>.</span>lib<span style=color:#f92672>.</span>mkApp {
+          drv <span style=color:#f92672>=</span> packages<span style=color:#f92672>.</span>emojied;
+        };
+      });
+}
+</code></pre></div><ol>
+<li><a href=https://nixos.wiki/wiki/Nixpkgs><code>nixpkgs</code></a> is like a package repository.
+This is where you get <code>rustc</code>, <code>cargo</code>, etc. for example.</li>
+<li><a href=https://github.com/numtide/flake-utils><code>flake-utils</code></a> just makes dealing
+with flakes a bit more convenient, especially with multiple OSes (only doing
+Linux for now).</li>
+<li><a href=https://github.com/nix-community/naersk><code>naersk</code></a> makes it easier to build
+static Rust binaries.</li>
+</ol>
+<p>These are all <em>inputs</em>, where everything in the <code>outputs</code> field is sourced
+from. <code>outputs</code> is where everything gets packaged. Another thing is, to help
+with reproducibility, it pins these inputs to a specific GitHub commit via a
+lock file. So no version numbers, but down to the commit. This is how projects
+can be built in the future in the exact same way as now.</p>
+<p>If you peek into <code>flake.lock</code>, you&rsquo;ll find something like this:</p>
+<pre tabindex=0><code>&quot;naersk&quot;: {
+  &quot;inputs&quot;: {
+    &quot;nixpkgs&quot;: &quot;nixpkgs&quot;
+  },
+  &quot;locked&quot;: {
+    &quot;lastModified&quot;: 1649096192,
+    &quot;narHash&quot;: &quot;sha256-7O8e+eZEYeU+ET98u/zW5epuoN/xYx9G+CIh4DjZVzY=&quot;,
+    &quot;owner&quot;: &quot;nix-community&quot;,
+    &quot;repo&quot;: &quot;naersk&quot;,
+    &quot;rev&quot;: &quot;d626f73332a8f587b613b0afe7293dd0777be07d&quot;,
+    &quot;type&quot;: &quot;github&quot;
+  },
+  &quot;original&quot;: {
+    &quot;owner&quot;: &quot;nix-community&quot;,
+    &quot;repo&quot;: &quot;naersk&quot;,
+    &quot;type&quot;: &quot;github&quot;
+  }
+},
+&quot;nixpkgs&quot;: {
+  &quot;locked&quot;: {
+    &quot;lastModified&quot;: 1648219316,
+    &quot;narHash&quot;: &quot;sha256-Ctij+dOi0ZZIfX5eMhgwugfvB+WZSrvVNAyAuANOsnQ=&quot;,
+    &quot;owner&quot;: &quot;NixOS&quot;,
+    &quot;repo&quot;: &quot;nixpkgs&quot;,
+    &quot;rev&quot;: &quot;30d3d79b7d3607d56546dd2a6b49e156ba0ec634&quot;,
+    &quot;type&quot;: &quot;github&quot;
+  },
+  &quot;original&quot;: {
+    &quot;id&quot;: &quot;nixpkgs&quot;,
+    &quot;type&quot;: &quot;indirect&quot;
+  }
+}
+</code></pre><p>There are more stuff in it, but hopefully this will make things a bit clearer.</p>
+<p>That&rsquo;s the best ELI5 I can think of, so I recommend you check out the
+<a href=https://nixos.wiki/wiki/Flakes>documentation</a> for a more technical explanation.</p>
+<p>So, I run <code>nix build</code> and&mldr;</p>
+<h1 id=problem-0-openssl>Problem 0: OpenSSL<a hidden class=anchor aria-hidden=true href=#problem-0-openssl>#</a></h1>
+<p>Bam.</p>
+<pre tabindex=0><code>error: builder for '/nix/store/pv9szkam1rawk40ywp3v89k53zg4b1l4-emojied-deps-0.1.0.drv' failed with exit code 101;
+       last 10 log lines:
+       &gt;   It looks like you're compiling on Linux and also targeting Linux. Currently this
+       &gt;   requires the `pkg-config` utility to find OpenSSL but unfortunately `pkg-config`
+       &gt;   could not be found. If you have OpenSSL installed you can likely fix this by
+       &gt;   installing `pkg-config`.
+       &gt;
+       &gt;   ', /sources/openssl-sys-0.9.72/build/find_normal.rs:180:5
+       &gt;   note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+       &gt; warning: build failed, waiting for other jobs to finish...
+       &gt; error: build failed
+       &gt; [naersk] cargo returned with exit code 101, exiting
+       For full logs, run 'nix log /nix/store/pv9szkam1rawk40ywp3v89k53zg4b1l4-emojied-deps-0.1.0.drv'.
+error: 1 dependencies of derivation '/nix/store/r0h49v7i2vg5dckb9h2g8p7na048rk4g-emojied-0.1.0.drv' failed to build
+</code></pre><p>I&rsquo;ve seen this error before! Since <code>emojied</code> uses <code>native-tls</code>, and since it&rsquo;s
+just a wrapper around OpenSSL, I need to have OpenSSL around. Thankfully,
+<code>naersk</code> has a <code>buildInputs</code> attribute for us to use.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-nix data-lang=nix>packages<span style=color:#f92672>.</span>emojied <span style=color:#960050;background-color:#1e0010>=</span> naersk-lib<span style=color:#f92672>.</span>buildPackage {
+  pname <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;emojied&#34;</span>;
+  root <span style=color:#f92672>=</span> <span style=color:#e6db74>./.</span>;
+  buildInputs <span style=color:#f92672>=</span> <span style=color:#66d9ef>with</span> pkgs; [ openssl pkg-config ];
+};
+</code></pre></div><p>Ran <code>nix build</code>, and I&rsquo;m greeted with another problem!</p>
+<h1 id=problem-1-git-submodule-woes>Problem 1: <code>git</code> submodule woes<a hidden class=anchor aria-hidden=true href=#problem-1-git-submodule-woes>#</a></h1>
+<pre tabindex=0><code>Compiling maud_macros v0.23.0 (https://github.com/lambda-fairy/maud?branch=main#e6787cd6)
+error: could not compile `maud_macros` due to 3 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: build failed
+error[E0583]: file not found for module `escape`
+ --&gt; /sources/maud_macros-0.23.0-e6787cd62165a075c7f16a32f8bbacc398f52d13/src/lib.rs:9:1
+  |
+9 | mod escape;
+  | ^^^^^^^^^^^
+  |
+  = help: to create the module `escape`, create file &quot;/nix/store/shixfmbv64zzi9i0rzb9c8870ydm7cf2-crates-io/maud_macr&gt;
+
+
+error[E0425]: cannot find function `escape_to_string` in module `escape`
+   --&gt; /sources/maud_macros-0.23.0-e6787cd62165a075c7f16a32f8bbacc398f52d13/src/generate.rs:272:17
+    |
+272 |         escape::escape_to_string(string, &amp;mut self.tail);
+    |                 ^^^^^^^^^^^^^^^^ not found in `escape`
+
+
+error: aborting due to 2 previous errors
+
+
+Some errors have detailed explanations: E0425, E0583.
+
+For more information about an error, try `rustc --explain E0425`.
+
+[naersk] cargo returned with exit code 101, exiting
+</code></pre><p>It&rsquo;s telling me that <code>cargo</code> can&rsquo;t resolve the <code>escape</code> module for <code>maud_macros</code>.
+I took a look at the <a href=https://github.com/lambda-fairy/maud/tree/main/maud_macros/src>source</a>,
+and initially seemed like it&rsquo;s a submodule:</p>
+<p><img loading=lazy src=/posts/p3/maud-dir.png alt="A list of directories with the <code>escape.rs</code> file being a submodule">
+</p>
+<p>Turns out there&rsquo;s a ticket (<a href=https://github.com/nix-community/naersk/issues/110>#110</a>)
+pointing out that submodules isn&rsquo;t supported by <code>naersk</code>. Fortunately, by the
+time I read this, there was a PR ready that fixed this. All it required was
+adding <code>gitSubmodules = true;</code>:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-nix data-lang=nix>packages<span style=color:#f92672>.</span>emojied <span style=color:#960050;background-color:#1e0010>=</span> naersk-lib<span style=color:#f92672>.</span>buildPackage {
+  pname <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;emojied&#34;</span>;
+  root <span style=color:#f92672>=</span> <span style=color:#e6db74>./.</span>;
+  gitSubmodules <span style=color:#f92672>=</span> <span style=color:#66d9ef>true</span>;
+};
+</code></pre></div><p>So this fixes everything then, right?</p>
+<p>Wrong.</p>
+<h1 id=problem-2-symlink-woes>Problem 2: Symlink woes<a hidden class=anchor aria-hidden=true href=#problem-2-symlink-woes>#</a></h1>
+<p>Remember how I said it was a submodule? Well, it turns out that <code>escape.rs</code> is
+actually a symlink (the icons look too similar!). <code>cargo</code> handles it just fine
+so running <code>cargo build</code> will work out. But this isn&rsquo;t the case for <code>naersk</code>. I
+couldn&rsquo;t find any issue talking about symlinks so I opened one
+(<a href=https://github.com/nix-community/naersk/issues/230>#230</a>). Unfortunately, I
+had no idea how to fix it, so I just decided to manually clone it, and remove
+the symlink for a copy instead. It&rsquo;s only one file, so it isn&rsquo;t that big of a
+deal.</p>
+<p>Kind of a hack, but it works now! A binary is available in <code>./result/bin/</code>,
+albeit a symlink. I ran it with:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh>PG__DBNAME<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;emojied_db&#34;</span> PG__HOST<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;localhost&#34;</span> PG__USER<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;sekun&#34;</span> PG__PORT<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;5432&#34;</span> <span style=color:#ae81ff>\
+</span><span style=color:#ae81ff></span>  ./result/bin/emojied
+</code></pre></div><p>&mldr;and I was greeted with this unstyled page:</p>
+<p><img loading=lazy src=/posts/p3/no-static-assets.png alt="screenshot of emojied with no style">
+</p>
+<h1 id=problem-3-static-assets>Problem 3: Static assets<a hidden class=anchor aria-hidden=true href=#problem-3-static-assets>#</a></h1>
+<p><code>emojied</code> is comprised of two things: a server binary, and static assets. These
+static assets are built using <code>tailwindcss</code>&rsquo;s CLI, and <code>esbuild</code>&mldr; which was
+not handled by <code>naersk</code>. It does not seem to provide an escape hatch, which
+makes sense anyway cause it would be kinda weird to do things unrelated to Rust
+in a Rust builder.</p>
+<p>Now what?</p>
+<p>Well, I found out about <code>overrideAttrs</code> and it is wonderful.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-nix data-lang=nix>{
+  <span style=color:#75715e># ...</span>
+
+  outputs <span style=color:#f92672>=</span> { self<span style=color:#f92672>,</span> nixpkgs<span style=color:#f92672>,</span> nixos-unstable<span style=color:#f92672>,</span> flake-utils<span style=color:#f92672>,</span> naersk }:
+    flake-utils<span style=color:#f92672>.</span>lib<span style=color:#f92672>.</span>eachSystem [ <span style=color:#e6db74>&#34;x86_64-linux&#34;</span> ] (system:
+      <span style=color:#66d9ef>let</span> pkgs <span style=color:#f92672>=</span> nixpkgs<span style=color:#f92672>.</span>legacyPackages<span style=color:#f92672>.</span><span style=color:#e6db74>${</span>system<span style=color:#e6db74>}</span>;
+          unstablepkgs <span style=color:#f92672>=</span> nixos-unstable<span style=color:#f92672>.</span>legacyPackages<span style=color:#f92672>.</span><span style=color:#e6db74>${</span>system<span style=color:#e6db74>}</span>;
+          naersk-lib <span style=color:#f92672>=</span> naersk<span style=color:#f92672>.</span>lib<span style=color:#f92672>.</span><span style=color:#e6db74>&#34;</span><span style=color:#e6db74>${</span>system<span style=color:#e6db74>}</span><span style=color:#e6db74>&#34;</span><span style=color:#f92672>.</span>override {
+            cargo <span style=color:#f92672>=</span> pkgs<span style=color:#f92672>.</span>cargo;
+            rustc <span style=color:#f92672>=</span> pkgs<span style=color:#f92672>.</span>rustc;
+          };
+
+          <span style=color:#75715e># I moved it up here so I could bind it to `emojied`.</span>
+          emojied <span style=color:#f92672>=</span> (naersk-lib<span style=color:#f92672>.</span>buildPackage {
+            pname <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;emojied&#34;</span>;
+            root <span style=color:#f92672>=</span> <span style=color:#e6db74>./.</span>;
+            nativeBuildInputs <span style=color:#f92672>=</span> <span style=color:#66d9ef>with</span> pkgs; [ ];
+            buildInputs <span style=color:#f92672>=</span> <span style=color:#66d9ef>with</span> pkgs; [ openssl pkg-config ];
+          })<span style=color:#f92672>.</span>overrideAttrs (old: {
+            <span style=color:#75715e># I get access to `old` which has the previous attributes.</span>
+            <span style=color:#75715e># And I get to override anything!</span>
+
+            nativeBuildInputs <span style=color:#f92672>=</span> old<span style=color:#f92672>.</span>nativeBuildInputs <span style=color:#f92672>++</span> [
+              unstablepkgs<span style=color:#f92672>.</span>nodePackages<span style=color:#f92672>.</span>typescript
+              unstablepkgs<span style=color:#f92672>.</span>nodePackages<span style=color:#f92672>.</span>tailwindcss
+              unstablepkgs<span style=color:#f92672>.</span>esbuild
+            ];
+
+            buildInputs <span style=color:#f92672>=</span> old<span style=color:#f92672>.</span>buildInputs;
+
+            buildPhase <span style=color:#f92672>=</span> old<span style=color:#f92672>.</span>buildPhase <span style=color:#f92672>+</span> <span style=color:#e6db74>&#39;&#39;
+</span><span style=color:#e6db74>              tailwindcss \
+</span><span style=color:#e6db74>                --input assets/app.css \
+</span><span style=color:#e6db74>                --config assets/tailwind.config.js \
+</span><span style=color:#e6db74>                --output public/app.css \
+</span><span style=color:#e6db74>                --minify
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>              esbuild \
+</span><span style=color:#e6db74>                assets/app.ts \
+</span><span style=color:#e6db74>                --outdir=public/ \
+</span><span style=color:#e6db74>                --minify
+</span><span style=color:#e6db74>            &#39;&#39;</span>;
+
+            installPhase <span style=color:#f92672>=</span> old<span style=color:#f92672>.</span>installPhase <span style=color:#f92672>+</span> <span style=color:#e6db74>&#39;&#39;
+</span><span style=color:#e6db74>              mv public $out/bin
+</span><span style=color:#e6db74>              mv bin/run $out/bin/run
+</span><span style=color:#e6db74>            &#39;&#39;</span>;
+          });
+      <span style=color:#66d9ef>in</span>
+      <span style=color:#66d9ef>rec</span> {
+        packages<span style=color:#f92672>.</span>emojied <span style=color:#f92672>=</span> emojied;
+        defaultPackage <span style=color:#f92672>=</span> packages<span style=color:#f92672>.</span>emojied;
+
+        apps<span style=color:#f92672>.</span>emojied <span style=color:#f92672>=</span> flake-utils<span style=color:#f92672>.</span>lib<span style=color:#f92672>.</span>mkApp {
+          drv <span style=color:#f92672>=</span> packages<span style=color:#f92672>.</span>emojied;
+        };
+      });
+}
+</code></pre></div><p>I removed <code>gitSubmodules = true</code> since it wasn&rsquo;t necessary anymore. <code>buildPackage</code>
+just spits out an attribute set, I can override it to add more things. Here, I
+added new native build inputs (build time), new steps to <code>buildPhase</code>, and
+<code>installPhase</code> for the static assets.</p>
+<p>And I ran it like this:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh>cd result/bin
+
+PG__DBNAME<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;emojied_db&#34;</span> PG__HOST<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;localhost&#34;</span> PG__USER<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;sekun&#34;</span> PG__PORT<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;5432&#34;</span> <span style=color:#ae81ff>\
+</span><span style=color:#ae81ff></span>  ./emojied
+</code></pre></div><p><img loading=lazy src=/posts/p3/has-static-assets.png alt="screenshot of emojied with style">
+</p>
+<p>Beautiful.</p>
+<p>Okay, so that seems to work but I have to run <code>emojied</code> in the same directory as
+<code>public/</code> cause otherwise it won&rsquo;t find anything. Which is expected because:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-rust data-lang=rust><span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>async</span> <span style=color:#66d9ef>fn</span> <span style=color:#a6e22e>stylesheet</span>() -&gt; (StatusCode, HeaderMap, String) {
+    <span style=color:#66d9ef>let</span> <span style=color:#66d9ef>mut</span> headers <span style=color:#f92672>=</span> HeaderMap::new();
+
+    <span style=color:#66d9ef>match</span> fs::read_to_string(<span style=color:#e6db74>&#34;public/app.css&#34;</span>) {
+                           <span style=color:#75715e>// ^ Relative path. Good job me!
+</span><span style=color:#75715e></span>        Ok(content) <span style=color:#f92672>=&gt;</span> {
+            headers.insert(
+                HeaderName::from_static(<span style=color:#e6db74>&#34;content-type&#34;</span>),
+                HeaderValue::from_static(<span style=color:#e6db74>&#34;text/css; charset=utf-8&#34;</span>),
+            );
+
+            (StatusCode::OK, headers, content)
+        }
+
+        Err(_e) <span style=color:#f92672>=&gt;</span> (StatusCode::NOT_FOUND, headers, String::from(<span style=color:#e6db74>&#34;Not found&#34;</span>)),
+    }
+}
+</code></pre></div><p>I&rsquo;m using relative paths! But other than that, it works. It&rsquo;s not exactly an issue
+for the way I&rsquo;m using it, which is:</p>
+<ol>
+<li>Build the binary</li>
+<li>Build static assets</li>
+<li>Copy files from #1 and #2, and throw it into an image.</li>
+</ol>
+<p>But with <code>nix run</code>, it gives me broken styles again. I don&rsquo;t want it to depend
+on where I run it! So. Close.</p>
+<h1 id=problem-4-making-it-work>Problem 4: Making it work™<a hidden class=anchor aria-hidden=true href=#problem-4-making-it-work>#</a></h1>
+<p>So the problem is that the file paths are relative which makes it depend on
+where I run the binary. The plan then is to provide the static asset directory
+path during runtime!</p>
+<p>This way it&rsquo;s flexible enough to:</p>
+<ol>
+<li>Ship off to a Docker image; and</li>
+<li>Use <code>nix run</code> without breaking anything.</li>
+</ol>
+<p>Something like this would be nice:</p>
+<pre tabindex=0><code>PG__DBNAME=&quot;emojied_db&quot; \
+PG__HOST=&quot;localhost&quot; \
+PG__USER=&quot;sekun&quot; \
+PG__PORT=&quot;5432&quot; \
+APP__STATIC_ASSETS=&quot;/foo/bar/public/&quot; \
+  ./emojied
+</code></pre><p>I added another field to <code>AppConfig</code>, and checked if there&rsquo;s an argument called
+<code>static_assets_path</code>:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-rust data-lang=rust><span style=color:#75715e>// src/config.rs
+</span><span style=color:#75715e></span>
+<span style=color:#66d9ef>struct</span> <span style=color:#a6e22e>AppConfig</span> {
+    <span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>pub</span> static_assets_path: String <span style=color:#75715e>// See disclaimer below
+</span><span style=color:#75715e></span>}
+</code></pre></div><p>Loaded it from the environment:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-rust data-lang=rust><span style=color:#75715e>// src/config.rs
+</span><span style=color:#75715e></span>
+<span style=color:#66d9ef>let</span> static_assets_path <span style=color:#f92672>=</span> env::var(<span style=color:#e6db74>&#34;APP__STATIC_ASSETS&#34;</span>)
+    .map_err(<span style=color:#f92672>|</span>_<span style=color:#f92672>|</span> Error::MissingStaticAssetsPath)<span style=color:#f92672>?</span>;
+
+<span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>
+Ok(AppConfig {
+    <span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>    static_assets_path, <span style=color:#75715e>// New!
+</span><span style=color:#75715e></span>})
+</code></pre></div><p>Add <code>AppConfig</code> to the middleware:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-rust data-lang=rust><span style=color:#75715e>// ...
+</span><span style=color:#75715e></span><span style=color:#66d9ef>let</span> config <span style=color:#f92672>=</span> Arc::new(config);
+
+<span style=color:#66d9ef>let</span> app <span style=color:#f92672>=</span> Router::new()
+    <span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>    .layer(Extension(config));
+</code></pre></div><p>And in the functions serving the files:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-rust data-lang=rust><span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>async</span> <span style=color:#66d9ef>fn</span> <span style=color:#a6e22e>js</span>(
+    Extension(config): <span style=color:#a6e22e>Extension</span><span style=color:#f92672>&lt;</span>Arc<span style=color:#f92672>&lt;</span>AppConfig<span style=color:#f92672>&gt;&gt;</span> <span style=color:#75715e>// New
+</span><span style=color:#75715e></span>) -&gt; (StatusCode, HeaderMap, String) {
+    <span style=color:#66d9ef>let</span> <span style=color:#66d9ef>mut</span> headers <span style=color:#f92672>=</span> HeaderMap::new();
+    <span style=color:#66d9ef>let</span> <span style=color:#66d9ef>mut</span> static_assets_path <span style=color:#f92672>=</span> config.static_assets_path.clone(); <span style=color:#75715e>// New
+</span><span style=color:#75715e></span>
+    static_assets_path.push_str(<span style=color:#e6db74>&#34;public/app.js&#34;</span>); <span style=color:#75715e>// New
+</span><span style=color:#75715e></span>
+                          <span style=color:#75715e>// Shiny, new path
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>match</span> fs::read_to_string(static_assets_path) {
+        Ok(content) <span style=color:#f92672>=&gt;</span> {
+            headers.insert(
+                HeaderName::from_static(<span style=color:#e6db74>&#34;content-type&#34;</span>),
+                HeaderValue::from_static(<span style=color:#e6db74>&#34;application/javascript; charset=utf-8&#34;</span>),
+            );
+
+            (StatusCode::OK, headers, content)
+        }
+
+        Err(_e) <span style=color:#f92672>=&gt;</span> (StatusCode::NOT_FOUND, headers, String::from(<span style=color:#e6db74>&#34;Not found&#34;</span>)),
+    }
+}
+</code></pre></div><p>&mldr;which I then repeated in 2 more functions because I was too lazy to make one
+endpoint for static assets. Now, I feel the pain of my laziness.</p>
+<blockquote>
+<p>Disclaimer: Before you come after me with pitchforks, I later did a tiny
+refactor which uses <code>PathBuf</code> rather than a <code>String</code>.</p>
+</blockquote>
+<p>Okay, but then I still need a way to set the environment variable automatically,
+right? Currently, it&rsquo;s not very convenient to do it every time it&rsquo;s called with
+<code>nix run</code>. Turns out <a href=https://nixos.wiki/wiki/Nix_Cookbook><code>makeWrapper</code></a> exists.
+(Thanks K900!)</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-nix data-lang=nix>{
+  <span style=color:#75715e># ...</span>
+
+        packages<span style=color:#f92672>.</span>emojied-unwrapped <span style=color:#f92672>=</span> emojied;
+
+
+        <span style=color:#75715e># New</span>
+        packages<span style=color:#f92672>.</span>emojied <span style=color:#f92672>=</span> pkgs<span style=color:#f92672>.</span>symlinkJoin {
+          name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;emojied&#34;</span>;
+          paths <span style=color:#f92672>=</span> [ emojied ];
+          buildInputs <span style=color:#f92672>=</span> [ pkgs<span style=color:#f92672>.</span>makeWrapper ];
+
+          postBuild <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;&#39;
+</span><span style=color:#e6db74>            wrapProgram $out/bin/emojied \
+</span><span style=color:#e6db74>              --set APP__STATIC_ASSETS &#34;</span><span style=color:#e6db74>${</span>emojied<span style=color:#e6db74>}</span><span style=color:#e6db74>/bin/public&#34;
+</span><span style=color:#e6db74>                                      # ^ What a convenient way to get the path
+</span><span style=color:#e6db74>          &#39;&#39;</span>;
+        };
+
+  <span style=color:#75715e># ...</span>
+}
+</code></pre></div><p>So I&rsquo;ll get the &ldquo;wrapped&rdquo; version of emojied with <code>nix build</code>, which has the
+static assets path already applied. Doing so gets me this:</p>
+<pre tabindex=0><code>sekun@nixos ~/P/emojiurl (chore/nixify-package)&gt; nix build
+sekun@nixos ~/P/emojiurl (chore/nixify-package)&gt; ls -la result/bin
+total 20
+dr-xr-xr-x 3 root root 4096 Jan  1  1970 .
+dr-xr-xr-x 3 root root 4096 Jan  1  1970 ..
+-r-xr-xr-x 1 root root  264 Jan  1  1970 emojied
+lrwxrwxrwx 1 root root   69 Jan  1  1970 .emojied-wrapped -&gt; /nix/store/7nh13gwhhlmfmmb6qss47axj7nd99jw7-emojied-0.1.0/bin/emojied
+dr-xr-xr-x 2 root root 4096 Jan  1  1970 public
+
+sekun@nixos ~/P/emojiurl (chore/nixify-package)&gt; ls -la
+# ...
+lrwxrwxrwx  1 sekun users      51 Apr 12 22:55 result -&gt; /nix/store/300n6rjxm88asmqhv99hid9mi8148xjs-emojied
+#...
+</code></pre><p>So, it symlinked <code>.emojied-wrapped</code> to the original <code>emojied</code>, and <code>result</code> is
+symlinked to a wrapped version of it. Is this another derivation? Seems like it,
+although I don&rsquo;t really know since I&rsquo;m not so familiar with this. I&rsquo;ll have to
+do more reading. I&rsquo;m just gonna manually test it to verify if it all works.
+<code>.#emojied-unwrapped</code> needs to complain about the missing assets path if I don&rsquo;t
+provide one, and <code>.#emojied</code> shouldn&rsquo;t.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh>sekun@nixos ~/P/emojiurl <span style=color:#f92672>(</span>chore/nixify-package<span style=color:#f92672>)</span>&gt; PG__DBNAME<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;emojied_db&#34;</span> PG__HOST<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;localhost&#34;</span> PG__USER<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;sekun&#34;</span> PG__PORT<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;5432&#34;</span> nix run .#emojied-unwrapped
+Loading configuration from environment
+Application config error: Missing environment variable: <span style=color:#e6db74>`</span>APP__STATIC_ASSETS<span style=color:#f92672>=</span>&lt;PATH_TO_FILES&gt;<span style=color:#e6db74>`</span>
+
+sekun@nixos ~/P/emojiurl <span style=color:#f92672>(</span>chore/nixify-package<span style=color:#f92672>)</span> <span style=color:#f92672>[</span>1<span style=color:#f92672>]</span>&gt; PG__DBNAME<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;emojied_db&#34;</span> PG__HOST<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;localhost&#34;</span> PG__USER<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;sekun&#34;</span> PG__PORT<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;5432&#34;</span> nix run
+Loading configuration from environment
+Attempting to establish a database connection
+Database connection established
+</code></pre></div><p>&mldr;and it works as expected. The second one also serves the static assets
+just fine! Hooray.</p>
+<h1 id=problem-5-copy-all-that-to-a-docker-image>Problem 5: Copy all that to a Docker image<a hidden class=anchor aria-hidden=true href=#problem-5-copy-all-that-to-a-docker-image>#</a></h1>
+<p>The final step is copying what was built by Nix to a Docker image. I&rsquo;m currently
+using a <code>Dockerfile</code> for that but this won&rsquo;t work with this new setup. The problem
+now is that Docker doesn&rsquo;t resolve symlinks that point outside the context, which
+is problematic since <code>result</code> is a symlink that points to some place in <code>/nix/store</code>!
+I could do some dirty hacks, but I could also just use Nix to build a Docker
+image for me.</p>
+<p><em>Wait, did you say Nix could build Docker images?</em></p>
+<p>Oh yeah, big time; <a href=https://nix.dev/tutorials/building-and-running-docker-images><code>nix.dev</code></a>
+has a great starting point [^9] for doing so.</p>
+<p>Here&rsquo;s what I ended up with:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-nix data-lang=nix><span style=color:#75715e># flake.nix</span>
+
+<span style=color:#75715e># ...</span>
+
+<span style=color:#75715e># In `outputs`</span>
+packages<span style=color:#f92672>.</span>emojied-docker <span style=color:#960050;background-color:#1e0010>=</span> pkgs<span style=color:#f92672>.</span>dockerTools<span style=color:#f92672>.</span>buildImage {
+  name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;emojied-docker&#34;</span>;
+  tag <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;latest&#34;</span>;
+
+  contents <span style=color:#f92672>=</span> [ pkgs<span style=color:#f92672>.</span>bash ];
+
+  config <span style=color:#f92672>=</span> {
+    WorkingDir <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;/app&#34;</span>;
+    Env <span style=color:#f92672>=</span> [ <span style=color:#e6db74>&#34;PATH=</span><span style=color:#e6db74>${</span>pkgs<span style=color:#f92672>.</span>coreutils<span style=color:#e6db74>}</span><span style=color:#e6db74>/bin/:</span><span style=color:#e6db74>${</span>packages<span style=color:#f92672>.</span>emojied<span style=color:#e6db74>}</span><span style=color:#e6db74>/bin&#34;</span> ];
+
+    ExposedPorts <span style=color:#f92672>=</span> {
+      <span style=color:#e6db74>&#34;3000/tcp&#34;</span> <span style=color:#f92672>=</span> {};
+    };
+
+    <span style=color:#75715e># bin/run is a script that handles the dumping of CA certs, and runs the</span>
+    <span style=color:#75715e># emojied server.</span>
+    Cmd <span style=color:#f92672>=</span> [ <span style=color:#e6db74>&#34;</span><span style=color:#e6db74>${</span>packages<span style=color:#f92672>.</span>emojied<span style=color:#e6db74>}</span><span style=color:#e6db74>/bin/run&#34;</span> ];
+  };
+};
+</code></pre></div><p>If you squint hard enough, the contents of <code>config</code> just looks like a Nix version
+of a <code>Dockerfile</code>, which it is! The other cool part is now the package versions
+are in sync no matter what environment it is in. <code>contents</code> allows me to throw
+in Nix packages to the image. Since it seemed like the <code>PATH</code>s aren&rsquo;t set automatically,
+I had to specify it in <code>Env</code> for <code>coreutils</code>, and <code>emojied</code>.</p>
+<p>It&rsquo;s basically like the other packages created, like <code>emojied</code>, and
+<code>emojied-unwrapped</code>. Which means I can build it in the exact same way as them:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=color:#75715e># Don&#39;t mind the branch change. I ran this in the morning.</span>
+sekun@nixos ~/P/emojiurl <span style=color:#f92672>(</span>main<span style=color:#f92672>)</span>&gt; nix build .#emojied-docker
+<span style=color:#75715e># some build-related output</span>
+
+sekun@nixos ~/P/emojiurl <span style=color:#f92672>(</span>main<span style=color:#f92672>)</span>&gt; ls -la
+<span style=color:#75715e># ...</span>
+lrwxrwxrwx  <span style=color:#ae81ff>1</span> sekun users      <span style=color:#ae81ff>78</span> Apr <span style=color:#ae81ff>13</span> 12:28 result -&gt; /nix/store/vmrja5imhrfhvl082j5qkqahcfj85adk-docker-image-emojied-docker.tar.gz
+<span style=color:#75715e># ...</span>
+</code></pre></div><p>Instead, <code>result</code> is a symlink to some image tar file which you can load with
+<code>docker load &lt; result</code>.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh>sekun@nixos ~/P/emojiurl <span style=color:#f92672>(</span>main<span style=color:#f92672>)</span>&gt; docker load &lt; result
+Loaded image: emojied-docker:latest
+
+sekun@nixos ~/P/emojiurl <span style=color:#f92672>(</span>main<span style=color:#f92672>)</span>&gt; docker images
+<span style=color:#75715e># ...</span>
+emojied-docker latest 1a9092013b19 <span style=color:#ae81ff>52</span> years ago 50MB
+</code></pre></div><p>Sweet!</p>
+<p>All that&rsquo;s left is to update the CI for these new steps, which is on the simpler
+side of things now:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yml data-lang=yml><span style=color:#f92672>name</span>: <span style=color:#ae81ff>CI/CD</span>
+
+<span style=color:#f92672>on</span>:
+  <span style=color:#f92672>push</span>:
+    <span style=color:#f92672>branches</span>:
+      - <span style=color:#ae81ff>main</span>
+
+<span style=color:#f92672>jobs</span>:
+  <span style=color:#f92672>deploy</span>:
+    <span style=color:#f92672>name</span>: <span style=color:#ae81ff>Build release and deploy</span>
+    <span style=color:#f92672>runs-on</span>: <span style=color:#ae81ff>ubuntu-20.04</span>
+
+    <span style=color:#f92672>steps</span>:
+      - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>Checkout repo</span>
+        <span style=color:#f92672>uses</span>: <span style=color:#ae81ff>actions/checkout@v2</span>
+
+      - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>Setup Nix</span>
+        <span style=color:#f92672>uses</span>: <span style=color:#ae81ff>cachix/install-nix-action@v15</span>
+
+      - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>Login to Docker Hub</span>
+        <span style=color:#f92672>uses</span>: <span style=color:#ae81ff>docker/login-action@v1</span>
+        <span style=color:#f92672>with</span>:
+          <span style=color:#f92672>username</span>: <span style=color:#ae81ff>${{ secrets.DOCKER_HUB_USERNAME }}</span>
+          <span style=color:#f92672>password</span>: <span style=color:#ae81ff>${{ secrets.DOCKER_HUB_PASSWORD }}</span>
+
+      - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>Build image</span>
+        <span style=color:#f92672>run</span>: |<span style=color:#e6db74>
+</span><span style=color:#e6db74>          nix build .#emojied-docker
+</span><span style=color:#e6db74>          docker load &lt; result</span>          
+
+      - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>Rename image</span>
+        <span style=color:#f92672>run</span>: <span style=color:#ae81ff>docker tag emojied-docker:latest hsekun/emojied:latest</span>
+
+      - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>Push image</span>
+        <span style=color:#f92672>run</span>: <span style=color:#ae81ff>docker push hsekun/emojied:latest</span>
+</code></pre></div><p>It&rsquo;s just so much easier, and I have more confidence that the CI will work
+as intended now that Nix is handling the important parts, which I can do
+locally. Not to say that Docker can&rsquo;t do the same thing, but I found that there
+were some differences with volumes that made it painful to debug.</p>
+<p><img loading=lazy src=/posts/p3/sweet-green-gh-actions.png alt="A screenshot of a GitHub actions job">
+</p>
+<h1 id=conclusion>Conclusion<a hidden class=anchor aria-hidden=true href=#conclusion>#</a></h1>
+<p>While it did simplify things such as dependency management across different
+environments, and the deploy process, setting up is pretty complicated. I had
+to look through different references and the Nix matrix channel just to find a
+description of an attribute. Things aren&rsquo;t as well-documented but there&rsquo;s a lot
+of community effort to make this less painful.</p>
+<p>Edit (April 24, 2022): Turns out that it actually isn&rsquo;t a static binary, and
+I&rsquo;ve modified the post accordingly. The upside is building the Docker image via
+Nix with <code>emojied</code> in it means it&rsquo;s somewhat irrelevant to require it to be a
+static binary to begin with. But it does mean I can&rsquo;t easily distribute it outside
+<code>nix</code>, which is a bummer. Maybe I&rsquo;ll hunt for a workaround in the future. Right
+now, I&rsquo;m not too keen into sinking a lot of time into something I won&rsquo;t benefit
+from.</p>
+</div>
+<footer class=post-footer>
+<ul class=post-tags>
+<li><a href=https://blog.sekun.dev/tags/nix/>nix</a></li>
+<li><a href=https://blog.sekun.dev/tags/emojied/>emojied</a></li>
+<li><a href=https://blog.sekun.dev/tags/docker/>docker</a></li>
+<li><a href=https://blog.sekun.dev/tags/rust/>rust</a></li>
+<li><a href=https://blog.sekun.dev/tags/github-actions/>github actions</a></li>
+</ul>
+</footer>
+</article>
+</main>
+<footer class=footer>
+<span>&copy; 2022 <a href=https://blog.sekun.dev>sekun's blog</a></span>
+<span>
+Powered by
+<a href=https://gohugo.io/ rel="noopener noreferrer" target=_blank>Hugo</a> &
+        <a href=https://git.io/hugopapermod rel=noopener target=_blank>PaperMod</a>
+</span>
+</footer>
+<a href=#top aria-label="go to top" title="Go to Top (Alt + G)" class=top-link id=top-link accesskey=g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentcolor"><path d="M12 6H0l6-6z"/></svg>
+</a>
+<script>let menu=document.getElementById('menu');menu&&(menu.scrollLeft=localStorage.getItem("menu-scroll-position"),menu.onscroll=function(){localStorage.setItem("menu-scroll-position",menu.scrollLeft)}),document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener("click",function(b){b.preventDefault();var a=this.getAttribute("href").substr(1);window.matchMedia('(prefers-reduced-motion: reduce)').matches?document.querySelector(`[id='${decodeURIComponent(a)}']`).scrollIntoView():document.querySelector(`[id='${decodeURIComponent(a)}']`).scrollIntoView({behavior:"smooth"}),a==="top"?history.replaceState(null,null," "):history.pushState(null,null,`#${a}`)})})</script>
+<script>var mybutton=document.getElementById("top-link");window.onscroll=function(){document.body.scrollTop>800||document.documentElement.scrollTop>800?(mybutton.style.visibility="visible",mybutton.style.opacity="1"):(mybutton.style.visibility="hidden",mybutton.style.opacity="0")}</script>
+<script>document.getElementById("theme-toggle").addEventListener("click",()=>{document.body.className.includes("dark")?(document.body.classList.remove('dark'),localStorage.setItem("pref-theme",'light')):(document.body.classList.add('dark'),localStorage.setItem("pref-theme",'dark'))})</script>
+<script>document.querySelectorAll('pre > code').forEach(b=>{const c=b.parentNode.parentNode,a=document.createElement('button');a.classList.add('copy-code'),a.innerText='copy';function d(){a.innerText='copied!',setTimeout(()=>{a.innerText='copy'},2e3)}a.addEventListener('click',e=>{if('clipboard'in navigator){navigator.clipboard.writeText(b.textContent),d();return}const a=document.createRange();a.selectNodeContents(b);const c=window.getSelection();c.removeAllRanges(),c.addRange(a);try{document.execCommand('copy'),d()}catch(a){}c.removeRange(a)}),c.classList.contains("highlight")?c.appendChild(a):c.parentNode.firstChild==c||(b.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName=="TABLE"?b.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(a):b.parentNode.appendChild(a))})</script>
+</body>
+</html>
