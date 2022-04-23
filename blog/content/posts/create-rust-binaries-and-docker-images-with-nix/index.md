@@ -1,5 +1,5 @@
 ---
-title: "Create static Rust binaries, and Docker images with Nix"
+title: "Create Rust binaries, and Docker images with Nix"
 date: 2022-04-11T06:20:00+00:00
 tags: ["nix", "emojied", "docker", "rust", "github actions"]
 author: "sekun"
@@ -15,6 +15,8 @@ cover:
     alt: "Nix logo with 2 arrows, each pointing to the Rust logo, and Docker."
     caption: "After many, many annoyances from Docker, I had to rethink using it."
     relative: false
+aliases:
+    - /posts/create-static-binaries-and-docker-images-with-nix/
 ---
 
 # Introduction
@@ -24,8 +26,7 @@ A few days ago, I [released](/posts/what-i-learned-from-building-a-rust-emoji-ur
 ([website](https://emojied.net), [repo](https://github.com/sekunho/emojied)) to
 the world. It went great, I'm glad people found it funny. However, I'm not too
 pleased with the deployment process: from building the project to shipping it.
-I made heavy use of Docker to build the necessary static assets, and the static
-binary.
+I made heavy use of Docker to build the necessary static assets, and binary.
 
 Here's the current setup:
 
@@ -84,7 +85,7 @@ This is the starting flake file:
              rustc = pkgs.rustc;
            };
       in rec {
-        # Build static binary
+        # Build binary
         packages.emojied = naersk-lib.buildPackage {
           pname = "emojied";
           root = ./.;
@@ -260,7 +261,7 @@ had no idea how to fix it, so I just decided to manually clone it, and remove
 the symlink for a copy instead. It's only one file, so it isn't that big of a
 deal.
 
-Kind of a hack, but it works now! A static binary is available in `./result/bin/`,
+Kind of a hack, but it works now! A binary is available in `./result/bin/`,
 albeit a symlink. I ran it with:
 
 ```sh
@@ -692,3 +693,11 @@ environments, and the deploy process, setting up is pretty complicated. I had
 to look through different references and the Nix matrix channel just to find a
 description of an attribute. Things aren't as well-documented but there's a lot
 of community effort to make this less painful.
+
+Edit (April 24, 2022): Turns out that it actually isn't a static binary, and
+I've modified the post accordingly. The upside is building the Docker image via
+Nix with `emojied` in it means it's somewhat irrelevant to require it to be a
+static binary to begin with. But it does mean I can't easily distribute it outside
+`nix`, which is a bummer. Maybe I'll hunt for a workaround in the future. Right
+now, I'm not too keen into sinking a lot of time into something I won't benefit
+from.
