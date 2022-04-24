@@ -1,5 +1,5 @@
 ---
-title: "Create Rust binaries, and Docker images with Nix"
+title: "Your First NixOS systemd service"
 date: 2022-04-24T10:13:00+00:00
 tags: ["nix", "emojied", "systemd"]
 author: "sekun"
