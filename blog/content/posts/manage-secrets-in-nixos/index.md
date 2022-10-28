@@ -51,11 +51,11 @@ it.
 ## Age files
 
 Secrets are encrypted and stored by `agenix` in these things called _age files_.
-These files have the `.age` format. For `agenix` to know who is allowed to
-read these age files for their secrets, it looks for a `secrets.nix` file in
-the current directory for the _rules_.
+These files have the `.age` format which is created by the `agenix` CLI. For
+you to create an age file, the CLI looks for a `secrets.nix` file in the current
+directory for the _rules_ to determine who is allowed to decrypt it.
 
-So, what are rules?
+So, what are these rules?
 
 ## Rules
 
@@ -121,9 +121,13 @@ in {
 }
 ```
 
-So for reading/creating `emojiedDBPassword.age` for example, `agenix` looks for
+When decrypting/creating `emojiedDBPassword.age` for example, `agenix` looks for
 the private key pair of the public key that was supplied. Otherwise, it prohibits
-the user from doing so.
+the user from doing so, and will complain about there not being any matching keys.
+
+> **Note**: You don't need the rules file for decrypting an age file because the
+> permissions are already encoded in the age file. You should only have it present
+> if you're using the CLI for creating/updating an age file.
 
 ## Creating a secret
 
