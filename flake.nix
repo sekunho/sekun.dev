@@ -14,12 +14,12 @@
         blog = pkgs.stdenv.mkDerivation {
           name = "blog";
           version = "0.1.0";
-          buildInputs = with pkgs; [ hugo ];
+          nativeBuildInputs = with pkgs; [ hugo ];
           src = self;
 
           buildPhase = ''
             cd blog
-            hugo --minify
+            hugo --minify --config config-new.yml
           '';
 
           installPhase = ''
